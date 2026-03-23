@@ -4,7 +4,8 @@
 // main app, and layout composition.
 // ──────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
 import { useDarkMode } from './hooks/useDarkMode'
@@ -14,16 +15,23 @@ import NoteEditor     from './components/Notes/NoteEditor'
 import LockScreen     from './components/Notes/LockScreen'
 import HomePage       from './components/Home/HomePage'
 import SharedNote     from './components/Notes/SharedNote'
-import AIAssistant    from './components/AI/AIAssistant'
 import FileImport     from './components/Import/FileImport'
 import GuestBanner    from './components/GuestBanner'
 import CookieBanner   from './components/CookieBanner'
+import Profile        from './components/User/Profile'
 import {
-  PenLine, BotMessageSquare, Upload, LogOut, Home, Lock, Plus, User,
-  Menu, X, Search, Sun, Moon, Trash2, Clock
+  PenLine, BotMessageSquare, Upload, LogOut, Lock, Plus, User,
+  Menu, X, Search, Sun, Moon, Trash2, Clock, Settings
 } from 'lucide-react'
 
 export default function App() {
+  const trackAiEvent = (eventName, payload = {}) => {
+    console.info('[analytics] ai_event', eventName, payload)
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', eventName, payload)
+    }
+  }
+
   const {
     user,
     loading: authLoading,
@@ -67,11 +75,14 @@ export default function App() {
   const [showPinEntry, setShowPinEntry] = useState(false)
   const [pendingLockNoteId, setPendingLockNoteId] = useState(null)
   // AI panel open state
-  const [aiOpen, setAiOpen]           = useState(false)
+  const [isAiOpen, setIsAiOpen]       = useState(false)
+  const [aiLoadError, setAiLoadError] = useState(null)
   // Import modal open state
   const [importOpen, setImportOpen]   = useState(false)
   // Trash panel open state
   const [trashOpen, setTrashOpen]     = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [noteHistory, setNoteHistory] = useState([])
@@ -83,6 +94,18 @@ export default function App() {
   // Active tag filter
   const [selectedTag, setSelectedTag] = useState(null)
   const [guestBannerDismissed, setGuestBannerDismissed] = useState(false)
+
+  const LazyAIAssistant = useMemo(
+    () => lazy(() =>
+      import('./components/AI/AIAssistant').catch((e) => {
+        console.error('AI load failed', e)
+        setAiLoadError(e)
+        trackAiEvent('ai_panel_load_failed', { message: e?.message ?? 'unknown' })
+        return { default: () => null }
+      })
+    ),
+    []
+  )
 
   // Auto-select the first note when notes load
   useEffect(() => {
@@ -111,10 +134,11 @@ export default function App() {
   }, [selectedNote, unlockedNoteIds])
 
   useEffect(() => {
-    if (isGuest && aiOpen) {
-      setAiOpen(false)
+    if (isGuest && isAiOpen) {
+      setIsAiOpen(false)
+      trackAiEvent('ai_panel_closed_guest_guard', { reason: 'guest_mode' })
     }
-  }, [isGuest, aiOpen])
+  }, [isGuest, isAiOpen])
 
   useEffect(() => {
     if (isGuest) {
@@ -122,9 +146,17 @@ export default function App() {
     }
   }, [isGuest])
 
-  // ── Shared note routing ──────────────────────────────────────
   const pathname = window.location.pathname
+  const isAiRoute = pathname === '/ai'
+
+  // ── Shared note routing ──────────────────────────────────────
   const sharedMatch = pathname.match(/^\/shared\/([^/]+)$/)
+
+  useEffect(() => {
+    if (!user || isGuest || !isAiRoute) return
+    setIsAiOpen(true)
+    trackAiEvent('ai_panel_open_route', { route: '/ai' })
+  }, [isAiRoute, user, isGuest])
   
   if (sharedMatch) {
     const noteId = sharedMatch[1]
@@ -147,6 +179,11 @@ export default function App() {
   if (!user) {
     return (
       <>
+        {isAiRoute && (
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            Please sign in to access the AI assistant.
+          </div>
+        )}
         <LoginPage
           onGoogleSignIn={signInWithGoogle}
           onEmailSignIn={signInWithEmail}
@@ -246,6 +283,25 @@ export default function App() {
   }
 
   const activeSnapshot = noteHistory.find((item) => item.id === selectedHistoryId) ?? null
+  const canUseAI = !isGuest
+  const aiDisabledReason = canUseAI ? '' : 'AI assistant is disabled in guest mode. Sign in to enable it.'
+
+  const handleOpenAiPanel = () => {
+    if (!canUseAI) {
+      console.warn('AI button click blocked', { reason: aiDisabledReason })
+      trackAiEvent('ai_button_blocked', { reason: 'guest_mode' })
+      return
+    }
+
+    setAiLoadError(null)
+    setIsAiOpen(true)
+    trackAiEvent('ai_button_clicked', { opened: true })
+  }
+
+  const handleGoHome = () => {
+    setCurrentView('home')
+    setSidebarOpen(false)
+  }
 
   const handleRestoreHistory = async () => {
     if (!selectedNote || !activeSnapshot) return
@@ -289,31 +345,22 @@ export default function App() {
         )}
 
         {/* Logo */}
-        <div className="flex items-center gap-2 mr-auto">
+        <Link
+          to="/"
+          onClick={handleGoHome}
+          className="flex items-center gap-2 mr-auto"
+          aria-label="Go to home"
+        >
           <div className="w-7 h-7 rounded-md bg-sage flex items-center justify-center">
             <PenLine size={14} className="text-white" />
           </div>
           <span className="font-serif font-semibold text-ink dark:text-dark-text text-lg tracking-tight hidden sm:block">
-            NoteFlow
+            Noteflow
           </span>
-        </div>
+        </Link>
 
         {/* Actions */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCurrentView('home')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-              ${currentView === 'home'
-                ? 'bg-sage text-white'
-                : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
-              }`}
-            aria-label="Go to home dashboard"
-            title="Home"
-          >
-            <Home size={15} />
-            <span className="hidden sm:inline">Home</span>
-          </button>
-
           {/* Theme toggle */}
           <button
             onClick={toggleDarkMode}
@@ -338,21 +385,37 @@ export default function App() {
           </button>
 
           {/* AI toggle */}
-          {!isGuest && (
-            <button
-              onClick={() => setAiOpen(v => !v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-                ${aiOpen
-                  ? 'bg-sage text-white'
-                  : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
-                }`}
-              aria-label="Toggle AI assistant"
-              aria-pressed={aiOpen}
-            >
-              <BotMessageSquare size={15} />
-              <span className="hidden sm:inline">AI</span>
-            </button>
-          )}
+          <button
+            onClick={handleOpenAiPanel}
+            disabled={!canUseAI}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+              ${isAiOpen
+                ? 'bg-sage text-white'
+                : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
+              }`}
+            aria-label="Open AI assistant"
+            aria-pressed={isAiOpen}
+            title={canUseAI ? 'AI assistant' : aiDisabledReason}
+          >
+            <BotMessageSquare size={15} />
+            <span className="hidden sm:inline">AI</span>
+            {!canUseAI && <span className="text-[10px] uppercase tracking-wide">Disabled</span>}
+          </button>
+
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
+              ${settingsOpen
+                ? 'bg-sage text-white'
+                : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
+              }`}
+            aria-label="Open settings"
+            title="Settings"
+            aria-pressed={settingsOpen}
+          >
+            <Settings size={15} />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
 
           {!isGuest && (
             <button
@@ -578,6 +641,18 @@ export default function App() {
 
         {/* ── Editor ──────────────────────────────────────── */}
         <main className="flex-1 overflow-hidden flex flex-col min-w-0" role="main">
+          {aiLoadError && (
+            <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900 text-red-700 dark:text-red-300 text-sm px-4 py-2 flex items-center justify-between gap-3">
+              <span>AI assistant failed to load. Reload or check network.</span>
+              <button
+                className="px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/70 transition-colors"
+                onClick={() => setAiLoadError(null)}
+                aria-label="Dismiss AI assistant load error"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           {error && (
             <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900 text-red-700 dark:text-red-300 text-sm px-4 py-2">
               {error}
@@ -614,21 +689,46 @@ export default function App() {
           )}
         </main>
 
-        {/* ── AI Panel ────────────────────────────────────── */}
-        {!isGuest && aiOpen && (
+      </div>
+      )}
+
+      {/* ── AI Panel (App-level) ───────────────────────────── */}
+      {isAiOpen && (
+        <>
+          {/* Mobile backdrop */}
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-ink/30 dark:bg-black/50 md:hidden"
+            onClick={() => {
+              setIsAiOpen(false)
+              trackAiEvent('ai_panel_closed_backdrop', { source: 'backdrop' })
+            }}
+            aria-label="Close AI assistant panel"
+          />
+
           <aside
-            className="w-80 xl:w-96 border-l border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface flex-shrink-0
-                       animate-slide-in-right hidden md:flex flex-col"
+            className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-md bg-white dark:bg-dark-surface border-l border-parchment-200 dark:border-dark-border flex flex-col animate-slide-in-right md:w-80 xl:w-96"
             aria-label="AI assistant panel"
           >
-            <AIAssistant
-              user={user}
-              selectedNote={selectedNote}
-              onClose={() => setAiOpen(false)}
-            />
+            <Suspense
+              fallback={
+                <div className="h-full flex items-center justify-center text-sm text-ink-muted dark:text-dark-muted px-6 text-center">
+                  Loading AI assistant...
+                </div>
+              }
+            >
+              <LazyAIAssistant
+                open={isAiOpen}
+                user={user}
+                selectedNote={selectedNote}
+                onClose={() => {
+                  setIsAiOpen(false)
+                  trackAiEvent('ai_panel_closed_button', { source: 'panel_close' })
+                }}
+              />
+            </Suspense>
           </aside>
-        )}
-      </div>
+        </>
       )}
 
       {/* ── Modals ───────────────────────────────────────────── */}
@@ -720,6 +820,54 @@ export default function App() {
           />
         </div>
       )}
+
+      {settingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-ink/30 dark:bg-black/50"
+            onClick={() => setSettingsOpen(false)}
+            aria-label="Close settings"
+          />
+
+          <section className="relative z-10 w-full max-w-md rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel">
+            <header className="px-4 py-3 border-b border-parchment-200 dark:border-dark-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink dark:text-dark-text">Settings</h2>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
+                aria-label="Close settings panel"
+              >
+                <X size={15} />
+              </button>
+            </header>
+
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-ink-muted dark:text-dark-muted">
+                Settings panel placeholder. More options can be added here.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileOpen(true)
+                  setSettingsOpen(false)
+                }}
+                className="w-full text-left px-3 py-2 rounded-md border border-parchment-200 dark:border-dark-border text-sm font-medium text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
+              >
+                Open Profile
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <Profile
+        user={user}
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
 
       <CookieBanner />
     </div>

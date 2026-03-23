@@ -100,13 +100,15 @@ const QUICK_PROMPTS = [
   { label: 'Suggest headings', prompt: 'Suggest a better heading structure for my note using markdown.' },
 ]
 
-export default function AIAssistant({ user, selectedNote, onClose }) {
+export default function AIAssistant({ open = false, user, selectedNote = null, noteId = null, onClose }) {
   const [messages,    setMessages]    = useState([])
   const [input,       setInput]       = useState('')
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState(null)
   const messagesEndRef                = useRef(null)
   const inputRef                      = useRef(null)
+  const noteContext                   = selectedNote ?? null
+  const hasNoteContext                = Boolean(noteContext?.id || noteId)
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -115,8 +117,9 @@ export default function AIAssistant({ user, selectedNote, onClose }) {
 
   // Focus input on mount
   useEffect(() => {
+    if (!open) return
     inputRef.current?.focus()
-  }, [])
+  }, [open])
 
   const clearChat = () => {
     setMessages([])
@@ -140,8 +143,8 @@ export default function AIAssistant({ user, selectedNote, onClose }) {
     setError(null)
 
     // Build the API messages array, injecting the selected note as context
-    const systemWithNote = selectedNote
-      ? `${SYSTEM_PROMPT}\n\n---\nThe user's currently open note:\nTitle: ${selectedNote.title}\n\n${selectedNote.content}`
+    const systemWithNote = noteContext
+      ? `${SYSTEM_PROMPT}\n\n---\nThe user's currently open note:\nTitle: ${noteContext.title}\n\n${noteContext.content}`
       : SYSTEM_PROMPT
 
     const apiMessages = [
@@ -239,19 +242,19 @@ export default function AIAssistant({ user, selectedNote, onClose }) {
                 <BotMessageSquare size={22} className="text-sage" />
               </div>
               <p className="text-sm font-medium text-ink mb-1">How can I help?</p>
-              {selectedNote ? (
+              {noteContext ? (
                 <p className="text-xs text-ink-muted">
-                  I can see your note <span className="font-medium">"{selectedNote.title}"</span>.
+                  I can see your note <span className="font-medium">"{noteContext.title}"</span>.
                 </p>
               ) : (
                 <p className="text-xs text-ink-muted">
-                  Select a note and I can help summarise or improve it.
+                  No note selected. You can still chat, brainstorm, or ask general questions.
                 </p>
               )}
             </div>
 
             {/* Quick prompts */}
-            {selectedNote && (
+            {hasNoteContext && (
               <div className="space-y-1.5">
                 <p className="text-[11px] text-ink-muted font-medium uppercase tracking-wide px-1 mb-2">
                   Quick actions

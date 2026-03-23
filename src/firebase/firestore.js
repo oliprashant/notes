@@ -8,6 +8,7 @@ import {
   collection,
   addDoc,
   setDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -23,6 +24,7 @@ import {
 import { db } from './config'
 
 const NOTES_COLLECTION = 'notes'
+const USERS_COLLECTION = 'users'
 
 /**
  * Subscribe to all notes belonging to a user, ordered by updatedAt descending.
@@ -344,4 +346,40 @@ export async function restoreNote(noteId) {
  */
 export async function deleteNote(noteId) {
   await deleteDoc(doc(db, NOTES_COLLECTION, noteId))
+}
+
+/**
+ * Fetch a user's profile document.
+ *
+ * @param {string} uid
+ * @returns {Promise<{ displayName?: string, hobby?: string } | null>}
+ */
+export async function getUserProfile(uid) {
+  if (!uid) return null
+  const ref = doc(db, USERS_COLLECTION, uid)
+  const snapshot = await getDoc(ref)
+  if (!snapshot.exists()) return null
+  return snapshot.data()
+}
+
+/**
+ * Upsert profile fields for a user.
+ *
+ * @param {string} uid
+ * @param {{ displayName?: string, hobby?: string }} profile
+ */
+export async function saveUserProfile(uid, profile) {
+  if (!uid) {
+    throw new Error('User is not authenticated.')
+  }
+
+  const ref = doc(db, USERS_COLLECTION, uid)
+  await setDoc(
+    ref,
+    {
+      ...profile,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
 }
