@@ -1,0 +1,145 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes bottom-sheet-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bottom-sheet-up {
+  animation: bottom-sheet-up 220ms ease-out;
+}
+
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.animate-lock-shake {
+  animation: lock-shake 280ms ease-in-out;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background-color: #FAFAF7;
+    color: #1A1A18;
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .dark body {
+    background-color: #1C1C1A;
+    color: #E8E8E4;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D4D4CC;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ABABAA;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #1C1C1A;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3A3A36;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #4A4A44;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid #5C7A5C;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .tiptap-content {
+    @apply min-h-[calc(100vh-300px)] rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface;
+  }
+
+  .tiptap-editor {
+    @apply min-h-[calc(100vh-300px)] p-6 text-[15px] leading-relaxed text-ink dark:text-dark-text outline-none;
+  }
+
+  .tiptap-editor h1 {
+    @apply font-serif text-3xl font-semibold mt-6 mb-3;
+  }
+  .tiptap-editor h2 {
+    @apply font-serif text-2xl font-semibold mt-5 mb-3;
+  }
+  .tiptap-editor p {
+    @apply mb-3;
+  }
+  .tiptap-editor ul {
+    @apply list-disc pl-6 mb-3 space-y-1;
+  }
+  .tiptap-editor ol {
+    @apply list-decimal pl-6 mb-3 space-y-1;
+  }
+  .tiptap-editor blockquote {
+    @apply border-l-2 border-sage-light pl-4 text-ink-muted dark:text-dark-muted italic my-4;
+  }
+  .tiptap-editor strong {
+    @apply font-semibold;
+  }
+
+  /* Note textarea — raw, unadorned editing surface */
+  .note-textarea {
+    @apply w-full h-full resize-none bg-transparent border-none outline-none
+           text-ink dark:text-dark-text leading-relaxed font-sans text-[15px] p-0;
+    caret-color: #5C7A5C;
+  }
+
+  /* Markdown preview prose */
+  .prose-note {
+    @apply text-ink dark:text-dark-text text-[15px] leading-relaxed;
+  }
+  .prose-note a  { @apply text-sage dark:text-sage-light underline; }
+  .prose-note code { @apply font-mono text-[13px] bg-parchment-200 dark:bg-dark-hover px-1 py-0.5 rounded; }
+  .prose-note pre { @apply font-mono text-[13px] bg-parchment-200 dark:bg-dark-hover p-4 rounded-lg overflow-auto mb-3; }
+  .prose-note blockquote {
+    @apply border-l-2 border-sage-light pl-4 text-ink-muted dark:text-dark-muted italic mb-3;
+  }
+  .prose-note hr { @apply border-t border-parchment-200 dark:border-dark-border my-6; }
+  .prose-note h1 { @apply font-serif text-2xl font-semibold mb-3 mt-5; }
+  .prose-note h2 { @apply font-serif text-xl font-semibold mb-2 mt-4; }
+  .prose-note h3 { @apply font-semibold text-base mb-2 mt-3; }
+  .prose-note p  { @apply mb-3; }
+  .prose-note ul { @apply list-disc pl-5 mb-3 space-y-1; }
+  .prose-note ol { @apply list-decimal pl-5 mb-3 space-y-1; }
+  .prose-note strong { @apply font-semibold; }
+}

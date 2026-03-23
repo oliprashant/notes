@@ -1,0 +1,48 @@
+// firestore.rules
+// ──────────────────────────────────────────────────────────────
+// Deploy with:  firebase deploy --only firestore:rules
+// ──────────────────────────────────────────────────────────────
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Notes collection ──────────────────────────────────────
+    // Each note lives at: /notes/{noteId}
+    // The note document must contain a `uid` field that matches
+    // the authenticated user's uid.
+    match /notes/{noteId} {
+      // Allow owner or collaborator to read and update
+      allow read, update: if request.auth != null && (
+        request.auth.uid == resource.data.uid ||
+        request.auth.token.email in resource.data.collaborators
+      );
+
+      // Only owner can delete
+      allow delete: if request.auth != null
+                    && request.auth.uid == resource.data.uid;
+
+      // Allow public read if note is shared
+      allow read: if resource.data.shared == true;
+
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.uid
+                    && request.resource.data.keys().hasAll(['uid', 'title', 'content', 'createdAt', 'updatedAt']);
+    }
+
+    // Note history snapshots at: /notes/{noteId}/history/{historyId}
+    match /notes/{noteId}/history/{historyId} {
+      allow read, update, delete: if request.auth != null
+                                  && request.auth.uid == get(/databases/$(database)/documents/notes/$(noteId)).data.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.auth.uid == get(/databases/$(database)/documents/notes/$(noteId)).data.uid;
+    }
+
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
