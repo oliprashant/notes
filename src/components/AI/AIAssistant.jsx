@@ -1,7 +1,7 @@
 // src/components/AI/AIAssistant.jsx
 // ──────────────────────────────────────────────────────────────
-// Collapsible AI chat panel powered by OpenAI's API.
-// The API key is read from the VITE_OPENAI_API_KEY env variable.
+// Collapsible AI chat panel powered by Groq's API.
+// The API key is read from the VITE_GROQ_API_KEY env variable.
 //
 // ⚠️  PRODUCTION WARNING: For a real deployment, proxy this
 //     request through your own backend to hide the API key.
@@ -127,8 +127,8 @@ export default function AIAssistant({ user, selectedNote, onClose }) {
     if (!userText.trim() || loading) return
     if (!user) { setError('Please sign in to use the AI assistant.'); return }
 
-    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'sk-...') {
-      setError('No OpenAI API key found. Add VITE_OPENAI_API_KEY to your .env file.')
+    if (!OPENAI_API_KEY || OPENAI_API_KEY === 'gsk_...') {
+      setError('No Groq API key found. Add VITE_GROQ_API_KEY to your .env file.')
       return
     }
 

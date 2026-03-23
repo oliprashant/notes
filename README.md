@@ -11,7 +11,7 @@ A minimalist, production-ready note-taking app with AI assistance, built with **
 | **Google Sign-In** | Firebase Authentication via Google popup |
 | **Real-time notes** | Firestore syncs notes instantly across devices |
 | **Markdown editor** | Write in markdown, toggle live preview |
-| **AI Assistant** | OpenAI-powered chat panel (summarise, improve, Q&A) |
+| **AI Assistant** | Groq-powered chat panel (summarise, improve, Q&A) |
 | **File import** | Drag-and-drop `.txt` / `.md` files → instant notes |
 | **Cookie consent** | GDPR-compliant banner with localStorage persistence |
 | **Responsive** | Works on desktop, tablet, and mobile |
@@ -82,18 +82,18 @@ The rules in `firestore.rules` ensure each user can only read/write their own no
 
 ---
 
-## 🤖 OpenAI Setup
+## 🤖 Groq Setup
 
-1. Get an API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+1. Get an API key from [console.groq.com/keys](https://console.groq.com/keys).
 
 2. Add to `.env`:
 
 ```env
-VITE_OPENAI_API_KEY=sk-...
-VITE_OPENAI_MODEL=gpt-4o-mini   # or gpt-4o, gpt-3.5-turbo
+VITE_GROQ_API_KEY=gsk_...
+VITE_GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-> ⚠️ **Production warning:** The API key is embedded in the browser bundle. For a real deployment, route AI requests through your own backend server to keep the key secret. The `.env` approach is fine for personal/local use.
+> 🎉 **Groq is completely free!** No credit card required. The API key is embedded in the browser bundle, but since Groq is free, there's no financial risk. For enhanced security in production, you can still route requests through a backend server if desired.
 
 ---
 
@@ -151,7 +151,7 @@ Output goes to `dist/`. Deploy to any static host:
 ## 🔒 Security Notes
 
 - Firestore rules (`firestore.rules`) enforce per-user isolation — users can only access their own notes.
-- The OpenAI API key in `.env` is exposed in the browser. Use a backend proxy in production.
+- The Groq API key in `.env` is exposed in the browser, but since Groq is free with no credit card, this is safe. You can optionally use a backend proxy for added security.
 - Cookie consent choices are stored in `localStorage` under the key `noteflow_cookie_consent`.
 
 ---
@@ -159,5 +159,5 @@ Output goes to `dist/`. Deploy to any static host:
 ## 🎨 Customisation
 
 - **Colours:** Edit `tailwind.config.js` → `theme.extend.colors`
-- **AI model:** Change `VITE_OPENAI_MODEL` in `.env`
+- **AI model:** Change `VITE_GROQ_MODEL` in `.env`
 - **Font:** Edit `index.html` Google Fonts link + `tailwind.config.js` `fontFamily`
