@@ -355,10 +355,10 @@ export async function deleteNote(noteId) {
  * @returns {Promise<{ displayName?: string, hobby?: string } | null>}
  */
 export async function getUserProfile(uid) {
-  if (!uid) return null
+  if (!uid) return {}
   const ref = doc(db, USERS_COLLECTION, uid)
   const snapshot = await getDoc(ref)
-  if (!snapshot.exists()) return null
+  if (!snapshot.exists()) return {}
   return snapshot.data()
 }
 
@@ -374,12 +374,5 @@ export async function saveUserProfile(uid, profile) {
   }
 
   const ref = doc(db, USERS_COLLECTION, uid)
-  await setDoc(
-    ref,
-    {
-      ...profile,
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  )
+  await setDoc(ref, profile, { merge: true })
 }

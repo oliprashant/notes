@@ -19,6 +19,7 @@ import FileImport     from './components/Import/FileImport'
 import GuestBanner    from './components/GuestBanner'
 import CookieBanner   from './components/CookieBanner'
 import Profile        from './components/User/Profile'
+import { getUserProfile, saveUserProfile } from './firebase/firestore'
 import {
   PenLine, BotMessageSquare, Upload, LogOut, Lock, Plus, User,
   Menu, X, Search, Sun, Moon, Trash2, Clock, Settings
@@ -81,8 +82,8 @@ export default function App() {
   const [importOpen, setImportOpen]   = useState(false)
   // Trash panel open state
   const [trashOpen, setTrashOpen]     = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [noteHistory, setNoteHistory] = useState([])
@@ -298,11 +299,6 @@ export default function App() {
     trackAiEvent('ai_button_clicked', { opened: true })
   }
 
-  const handleGoHome = () => {
-    setCurrentView('home')
-    setSidebarOpen(false)
-  }
-
   const handleRestoreHistory = async () => {
     if (!selectedNote || !activeSnapshot) return
     await editNote(selectedNote.id, {
@@ -347,7 +343,6 @@ export default function App() {
         {/* Logo */}
         <Link
           to="/"
-          onClick={handleGoHome}
           className="flex items-center gap-2 mr-auto"
           aria-label="Go to home"
         >
@@ -403,15 +398,15 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setIsSettingsOpen(true)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-              ${settingsOpen
+              ${isSettingsOpen
                 ? 'bg-sage text-white'
                 : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
               }`}
             aria-label="Open settings"
             title="Settings"
-            aria-pressed={settingsOpen}
+            aria-pressed={isSettingsOpen}
           >
             <Settings size={15} />
             <span className="hidden sm:inline">Settings</span>
@@ -489,6 +484,15 @@ export default function App() {
                 />
               )
             )}
+
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
+              title="Profile"
+              aria-label="Open profile"
+            >
+              <User size={16} />
+            </button>
 
             {isGuest && (
               <button
@@ -821,55 +825,46 @@ export default function App() {
         </div>
       )}
 
-      {settingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button
-            type="button"
-            className="absolute inset-0 bg-ink/30 dark:bg-black/50"
-            onClick={() => setSettingsOpen(false)}
-            aria-label="Close settings"
-          />
-
-          <section className="relative z-10 w-full max-w-md rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel">
-            <header className="px-4 py-3 border-b border-parchment-200 dark:border-dark-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink dark:text-dark-text">Settings</h2>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(false)}
-                className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
-                aria-label="Close settings panel"
-              >
-                <X size={15} />
-              </button>
-            </header>
-
-            <div className="p-4 space-y-3">
-              <p className="text-sm text-ink-muted dark:text-dark-muted">
-                Settings panel placeholder. More options can be added here.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setProfileOpen(true)
-                  setSettingsOpen(false)
-                }}
-                className="w-full text-left px-3 py-2 rounded-md border border-parchment-200 dark:border-dark-border text-sm font-medium text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
-              >
-                Open Profile
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      <SettingsModal open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
 
       <Profile
         user={user}
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
+        open={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        loadProfile={getUserProfile}
+        saveProfile={saveUserProfile}
       />
 
       <CookieBanner />
+    </div>
+  )
+}
+
+function SettingsModal({ open, onClose }) {
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-ink/30 dark:bg-black/50"
+        onClick={onClose}
+        aria-label="Close settings"
+      />
+
+      <section className="relative z-10 w-full max-w-md rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel p-4">
+        <h2 className="text-sm font-semibold text-ink dark:text-dark-text">Settings</h2>
+        <p className="text-sm text-ink-muted dark:text-dark-muted mt-2">Settings coming soon</p>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-2 text-sm font-medium rounded-md bg-sage text-white hover:bg-sage-light transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

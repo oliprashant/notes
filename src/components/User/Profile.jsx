@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { X, UserRound, Loader2 } from 'lucide-react'
-import { getUserProfile, saveUserProfile } from '../../firebase/firestore'
 
 const MAX_LENGTH = 120
 
-export default function Profile({ user, open, onClose }) {
+export default function Profile({ user, open, onClose, loadProfile, saveProfile }) {
   const [displayName, setDisplayName] = useState('')
   const [hobby, setHobby] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,7 +28,7 @@ export default function Profile({ user, open, onClose }) {
       }
 
       try {
-        const profile = await getUserProfile(user.uid)
+        const profile = await loadProfile(user.uid)
         if (cancelled) return
 
         const authDisplayName = user.displayName ?? ''
@@ -52,7 +51,22 @@ export default function Profile({ user, open, onClose }) {
     return () => {
       cancelled = true
     }
-  }, [open, user])
+  }, [open, user, loadProfile])
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => {
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [open, onClose])
 
   useEffect(() => {
     if (!toast.message) return
@@ -89,7 +103,7 @@ export default function Profile({ user, open, onClose }) {
     setError('')
 
     try {
-      await saveUserProfile(user.uid, {
+      await saveProfile(user.uid, {
         displayName: trimmedDisplayName,
         hobby: trimmedHobby,
       })
@@ -100,6 +114,8 @@ export default function Profile({ user, open, onClose }) {
       setSaving(false)
     }
   }
+
+  const canEdit = Boolean(user?.uid)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -128,68 +144,69 @@ export default function Profile({ user, open, onClose }) {
           </button>
         </header>
 
-        <form onSubmit={handleSave} className="p-4 space-y-4">
-          {!user?.uid && (
+        {!canEdit ? (
+          <div className="p-4">
             <p className="text-sm rounded-md border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2">
-              You are not signed in. Sign in to save profile details.
+              Please sign in to edit your profile
             </p>
-          )}
-
-          {error && (
-            <p className="text-sm rounded-md border border-red-200 bg-red-50 text-red-700 px-3 py-2">
-              {error}
-            </p>
-          )}
-
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-dark-muted">
-              Display Name
-            </span>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              maxLength={MAX_LENGTH}
-              disabled={!user?.uid || loading || saving}
-              className="mt-1 w-full rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-ink dark:text-dark-text outline-none focus:border-sage transition-colors disabled:opacity-60"
-              placeholder="Your name"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-dark-muted">
-              Hobby
-            </span>
-            <input
-              type="text"
-              value={hobby}
-              onChange={(e) => setHobby(e.target.value)}
-              maxLength={MAX_LENGTH}
-              disabled={!user?.uid || loading || saving}
-              className="mt-1 w-full rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-ink dark:text-dark-text outline-none focus:border-sage transition-colors disabled:opacity-60"
-              placeholder="Photography, chess, trail running..."
-            />
-            <p className="mt-1 text-xs text-ink-muted dark:text-dark-muted">{hobby.length}/{MAX_LENGTH}</p>
-          </label>
-
-          <div className="pt-1 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-2 text-sm font-medium rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
-            >
-              Close
-            </button>
-            <button
-              type="submit"
-              disabled={!user?.uid || loading || saving}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-sage text-white hover:bg-sage-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving && <Loader2 size={14} className="animate-spin" />}
-              Save
-            </button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSave} className="p-4 space-y-4">
+            {error && (
+              <p className="text-sm rounded-md border border-red-200 bg-red-50 text-red-700 px-3 py-2">
+                {error}
+              </p>
+            )}
+
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-dark-muted">
+                Display Name
+              </span>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={MAX_LENGTH}
+                disabled={loading || saving}
+                className="mt-1 w-full rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-ink dark:text-dark-text outline-none focus:border-sage transition-colors disabled:opacity-60"
+                placeholder="Your name"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-ink-muted dark:text-dark-muted">
+                Hobby
+              </span>
+              <textarea
+                value={hobby}
+                onChange={(e) => setHobby(e.target.value)}
+                maxLength={MAX_LENGTH}
+                disabled={loading || saving}
+                className="mt-1 w-full min-h-24 rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg px-3 py-2 text-sm text-ink dark:text-dark-text outline-none focus:border-sage transition-colors disabled:opacity-60"
+                placeholder="Photography, chess, trail running..."
+              />
+              <p className="mt-1 text-xs text-ink-muted dark:text-dark-muted">{hobby.length}/{MAX_LENGTH}</p>
+            </label>
+
+            <div className="pt-1 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-2 text-sm font-medium rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="submit"
+                disabled={loading || saving}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-sage text-white hover:bg-sage-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving && <Loader2 size={14} className="animate-spin" />}
+                Save
+              </button>
+            </div>
+          </form>
+        )}
 
         {toast.message && (
           <div className="px-4 pb-4">
