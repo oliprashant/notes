@@ -7,6 +7,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // User profile documents at: /users/{userId}
+    // Each user can only access their own document.
+    match /users/{userId} {
+      allow read, create, update, delete: if request.auth != null
+                                          && request.auth.uid == userId;
+    }
+
     // ── Notes collection ──────────────────────────────────────
     // Each note lives at: /notes/{noteId}
     // The note document must contain a `uid` field that matches
