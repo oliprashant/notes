@@ -1,53 +1,195 @@
-// firestore.rules
-// ──────────────────────────────────────────────────────────────
-// Deploy with:  firebase deploy --only firestore:rules
-// ──────────────────────────────────────────────────────────────
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User profile documents at: /users/{userId}
-    // Each user can only access their own document.
-    match /users/{userId} {
-      allow read, create, update, delete: if request.auth != null
-                                          && request.auth.uid == userId;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // ── Notes collection ──────────────────────────────────────
-    // Each note lives at: /notes/{noteId}
-    // The note document must contain a `uid` field that matches
-    // the authenticated user's uid.
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function profileVisible(uid) {
+      return exists(/databases/$(database)/documents/users/$(uid))
+        && userDoc(uid).data.visibility == 'public';
+    }
+
+    function canReadProfile(uid) {
+      return isSelf(uid) || profileVisible(uid);
+    }
+
+    function isSafeSocialCountUpdate() {
+      return signedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'followersCount',
+          'followingCount',
+          'updatedAt'
+        ]);
+    }
+
+    function noteDoc(noteId) {
+      return get(/databases/$(database)/documents/notes/$(noteId));
+    }
+
+    function noteIsPublic(noteId) {
+      return exists(/databases/$(database)/documents/notes/$(noteId))
+        && (
+          noteDoc(noteId).data.visibility == 'public'
+          || noteDoc(noteId).data.shared == true
+        );
+    }
+
+    function canReadNote(noteId) {
+      return noteIsPublic(noteId)
+        || (
+          signedIn()
+          && (
+            noteDoc(noteId).data.uid == request.auth.uid
+            || (
+              request.auth.token.email != null
+              && request.auth.token.email in noteDoc(noteId).data.collaborators
+            )
+          )
+        );
+    }
+
+    // Allow non-owners to update only social counters on notes.
+    function isSafeCounterUpdate() {
+      return signedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'likeCount',
+          'commentCount',
+          'bookmarkCount',
+          'lastInteractionAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == resource.data.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if canReadProfile(userId);
+      allow create, delete: if isSelf(userId);
+      allow update: if isSelf(userId) || isSafeSocialCountUpdate();
+
+      match /bookmarks/{noteId} {
+        allow read, create, update, delete: if isSelf(userId);
+      }
+
+      match /badges/{badgeId} {
+        allow read: if canReadProfile(userId);
+        allow create, update, delete: if isSelf(userId);
+      }
+    }
+
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
     match /notes/{noteId} {
-      // Allow owner or collaborator to read and update
-      allow read, update: if request.auth != null && (
-        request.auth.uid == resource.data.uid ||
-        request.auth.token.email in resource.data.collaborators
+      // Query-safe read rule for top-level notes queries.
+      allow read: if (
+        resource.data.visibility == 'public'
+        || resource.data.shared == true
+        || (
+          signedIn()
+          && (
+            resource.data.uid == request.auth.uid
+            || (
+              request.auth.token.email != null
+              && resource.data.collaborators != null
+              && request.auth.token.email in resource.data.collaborators
+            )
+          )
+        )
       );
 
-      // Only owner can delete
-      allow delete: if request.auth != null
-                    && request.auth.uid == resource.data.uid;
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'title',
+          'content',
+          'visibility',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.visibility in ['public', 'private'];
 
-      // Allow public read if note is shared
-      allow read: if resource.data.shared == true;
+      allow update: if (
+        signedIn()
+        && (
+          resource.data.uid == request.auth.uid
+          || (
+            request.auth.token.email != null
+            && request.auth.token.email in resource.data.collaborators
+          )
+          || isSafeCounterUpdate()
+        )
+      );
 
-      allow create: if request.auth != null
-                    && request.auth.uid == request.resource.data.uid
-                    && request.resource.data.keys().hasAll(['uid', 'title', 'content', 'createdAt', 'updatedAt']);
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+
+      match /likes/{likeUserId} {
+        allow read: if canReadNote(noteId);
+        allow create, delete: if signedIn() && request.auth.uid == likeUserId && canReadNote(noteId);
+        allow update: if false;
+      }
+
+      match /comments/{commentId} {
+        allow read: if canReadNote(noteId);
+        allow create: if signedIn()
+          && canReadNote(noteId)
+          && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if signedIn() && resource.data.uid == request.auth.uid;
+      }
+
+      match /history/{historyId} {
+        allow read: if signedIn() && canReadNote(noteId);
+        allow create: if signedIn() && noteDoc(noteId).data.uid == request.auth.uid;
+        allow update, delete: if signedIn() && noteDoc(noteId).data.uid == request.auth.uid;
+      }
     }
 
-    // Note history snapshots at: /notes/{noteId}/history/{historyId}
-    match /notes/{noteId}/history/{historyId} {
-      allow read, update, delete: if request.auth != null
-                                  && request.auth.uid == get(/databases/$(database)/documents/notes/$(noteId)).data.uid;
-
-      allow create: if request.auth != null
-                    && request.resource.data.uid == request.auth.uid
-                    && request.auth.uid == get(/databases/$(database)/documents/notes/$(noteId)).data.uid;
+    match /followers/{userId}/userFollowers/{followerId} {
+      allow read: if true;
+      allow create, delete: if signedIn() && request.auth.uid == followerId;
+      allow update: if false;
     }
 
-    // Deny everything else by default
+    match /following/{userId}/userFollowing/{followedId} {
+      allow read: if signedIn();
+      allow create, delete: if signedIn() && request.auth.uid == userId;
+      allow update: if false;
+    }
+
+    match /notifications/{userId}/items/{notificationId} {
+      allow read: if isSelf(userId);
+      allow create: if signedIn() && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if isSelf(userId);
+    }
+
+    match /activities/{activityId} {
+      allow create: if signedIn() && request.resource.data.actorUid == request.auth.uid;
+      allow read: if signedIn()
+        && (
+          resource.data.actorUid == request.auth.uid
+          || resource.data.targetOwnerUid == request.auth.uid
+        );
+      allow update, delete: if false;
+    }
+
+    match /sessions/{userId}/userSessions/{sessionId} {
+      allow read, create, update, delete: if isSelf(userId);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

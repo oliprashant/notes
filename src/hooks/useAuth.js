@@ -16,6 +16,21 @@ import {
   signInAnonymously,
 } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase/config'
+import {
+  getOrCreateSessionId,
+  subscribeToSessionRevocation,
+  upsertLastLogin,
+  upsertSessionPresence,
+} from '../firebase/profileService'
+
+function getBrowserName() {
+  const ua = navigator.userAgent || ''
+  if (ua.includes('Edg/')) return 'Edge'
+  if (ua.includes('Chrome/')) return 'Chrome'
+  if (ua.includes('Firefox/')) return 'Firefox'
+  if (ua.includes('Safari/') && !ua.includes('Chrome/')) return 'Safari'
+  return 'Unknown'
+}
 
 export function useAuth() {
   const [user, setUser]       = useState(null)
@@ -37,6 +52,29 @@ export function useAuth() {
     )
     return unsubscribe
   }, [])
+
+  // Track current session in Firestore and sign out if this session is revoked.
+  useEffect(() => {
+    if (!user?.uid) return undefined
+
+    const sessionId = getOrCreateSessionId(user.uid)
+
+    upsertLastLogin(user.uid).catch(() => {})
+    upsertSessionPresence(user.uid, sessionId, {
+      device: navigator.platform || 'Unknown device',
+      browser: getBrowserName(),
+    }).catch(() => {})
+
+    const unsubscribe = subscribeToSessionRevocation(user.uid, sessionId, async () => {
+      try {
+        await signOut(auth)
+      } catch {
+        // Ignore sign-out errors triggered by revoked session listener.
+      }
+    })
+
+    return unsubscribe
+  }, [user?.uid])
 
   /** Sign in with Google popup */
   const signInWithGoogle = async () => {

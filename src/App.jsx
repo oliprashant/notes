@@ -5,7 +5,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
 import { useDarkMode } from './hooks/useDarkMode'
@@ -18,14 +18,19 @@ import SharedNote     from './components/Notes/SharedNote'
 import FileImport     from './components/Import/FileImport'
 import GuestBanner    from './components/GuestBanner'
 import CookieBanner   from './components/CookieBanner'
-import Profile        from './components/User/Profile'
-import { getUserProfile, saveUserProfile } from './firebase/firestore'
+import ProfilePage    from './components/Profile/ProfilePage'
+import FeedPage       from './components/Social/FeedPage'
+import SearchPage     from './components/Social/SearchPage'
+import NotificationCenter from './components/Social/NotificationCenter'
 import {
   PenLine, BotMessageSquare, Upload, LogOut, Lock, Plus, User,
-  Menu, X, Search, Sun, Moon, Trash2, Clock, Settings
+  Menu, X, Search, Sun, Moon, Trash2, Clock, Settings, Bell, Compass
 } from 'lucide-react'
 
 export default function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
   const trackAiEvent = (eventName, payload = {}) => {
     console.info('[analytics] ai_event', eventName, payload)
     if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
@@ -83,7 +88,6 @@ export default function App() {
   // Trash panel open state
   const [trashOpen, setTrashOpen]     = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [noteHistory, setNoteHistory] = useState([])
@@ -147,8 +151,13 @@ export default function App() {
     }
   }, [isGuest])
 
-  const pathname = window.location.pathname
+  const pathname = location.pathname
   const isAiRoute = pathname === '/ai'
+  const isFeedRoute = pathname === '/feed'
+  const isSearchRoute = pathname === '/search'
+  const isNotificationsRoute = pathname === '/notifications'
+  const profileMatch = pathname.match(/^\/profile(?:\/([^/]+))?$/)
+  const isProfileRoute = Boolean(profileMatch)
 
   // ── Shared note routing ──────────────────────────────────────
   const sharedMatch = pathname.match(/^\/shared\/([^/]+)$/)
@@ -162,6 +171,22 @@ export default function App() {
   if (sharedMatch) {
     const noteId = sharedMatch[1]
     return <SharedNote noteId={noteId} />
+  }
+
+  if (isProfileRoute) {
+    return <ProfilePage viewedUserId={profileMatch?.[1] ?? null} />
+  }
+
+  if (isFeedRoute) {
+    return <FeedPage />
+  }
+
+  if (isSearchRoute) {
+    return <SearchPage />
+  }
+
+  if (isNotificationsRoute) {
+    return <NotificationCenter />
   }
 
   // ── Loading splash ───────────────────────────────────────────
@@ -471,6 +496,33 @@ export default function App() {
 
           {/* User + sign out */}
           <div className="flex items-center gap-2 ml-2 pl-2 border-l border-parchment-200 dark:border-dark-border">
+            <button
+              onClick={() => navigate('/feed')}
+              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
+              title="Feed"
+              aria-label="Open feed"
+            >
+              <Compass size={16} />
+            </button>
+
+            <button
+              onClick={() => navigate('/search')}
+              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
+              title="Search users"
+              aria-label="Search users"
+            >
+              <Search size={16} />
+            </button>
+
+            <button
+              onClick={() => navigate('/notifications')}
+              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
+              title="Notifications"
+              aria-label="Open notifications"
+            >
+              <Bell size={16} />
+            </button>
+
             {isGuest ? (
               <div className="w-7 h-7 rounded-full bg-parchment-200 dark:bg-dark-hover flex items-center justify-center">
                 <User size={14} className="text-ink-muted dark:text-dark-muted" />
@@ -486,7 +538,7 @@ export default function App() {
             )}
 
             <button
-              onClick={() => setIsProfileOpen(true)}
+              onClick={() => navigate('/profile')}
               className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
               title="Profile"
               aria-label="Open profile"
@@ -826,14 +878,6 @@ export default function App() {
       )}
 
       <SettingsModal open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-
-      <Profile
-        user={user}
-        open={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-        loadProfile={getUserProfile}
-        saveProfile={saveUserProfile}
-      />
 
       <CookieBanner />
     </div>

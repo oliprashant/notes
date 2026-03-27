@@ -10,6 +10,7 @@ import {
   setDoc,
   getDoc,
   getDocs,
+  getCountFromServer,
   updateDoc,
   deleteDoc,
   doc,
@@ -112,10 +113,14 @@ export async function createNote(uid, { title = 'Untitled', content = '' } = {})
     uid,
     title,
     content,
+    visibility: 'private',
     collaborators: [],
     tags: [],
     pinned: false,
     favourite: false,
+    likeCount: 0,
+    commentCount: 0,
+    bookmarkCount: 0,
     deleted: false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -374,5 +379,31 @@ export async function saveUserProfile(uid, profile) {
   }
 
   const ref = doc(db, USERS_COLLECTION, uid)
-  await setDoc(ref, profile, { merge: true })
+  const existing = await getDoc(ref)
+  const createdAt = existing.exists()
+    ? existing.data().createdAt ?? serverTimestamp()
+    : serverTimestamp()
+
+  await setDoc(
+    ref,
+    {
+      ...profile,
+      createdAt,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  )
+}
+
+/**
+ * Count notes owned by a user.
+ *
+ * @param {string} uid
+ * @returns {Promise<number>}
+ */
+export async function getUserNotesCount(uid) {
+  if (!uid) return 0
+  const notesQuery = query(collection(db, NOTES_COLLECTION), where('uid', '==', uid))
+  const aggregate = await getCountFromServer(notesQuery)
+  return aggregate.data().count ?? 0
 }
