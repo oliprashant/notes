@@ -1,0 +1,185 @@
+/* Global Styles - Fonts and Core Setup */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* Rest of global styles below (after tailwind) */
+
+* {
+  @apply box-border;
+}
+
+html {
+  @apply h-full scroll-smooth;
+}
+
+body {
+  @apply h-full m-0 bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text transition-colors duration-300;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+#root {
+  @apply h-full;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-dark-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-dark-hover;
+}
+
+/* Selection */
+::selection {
+  @apply bg-blue-500 text-white;
+}
+
+::-moz-selection {
+  @apply bg-blue-500 text-white;
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-dark-bg rounded;
+}
+
+/* Text selection in inputs */
+input::selection,
+textarea::selection {
+  @apply bg-blue-500 text-white;
+}
+
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  @apply text-gray-400 dark:text-dark-muted;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth transitions */
+.transition-all-smooth {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* Glass Morphism Effect */
+.glass {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent;
+}
+
+/* Shadow classes */
+.shadow-glow {
+  @apply shadow-lg;
+}
+
+.shadow-glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Accessible focus for tabs */
+.focus-ring {
+  @apply focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-bg;
+}
+
+/* Scrollable container */
+.scrollable {
+  @apply overflow-y-auto;
+}
+
+/* Flex center */
+.center {
+  @apply flex items-center justify-center;
+}
+
+/* Container queries for responsive components */
+@supports (container-type: inline-size) {
+  .container-sm {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 400px) {
+    .container-sm\:text-sm {
+      @apply text-sm;
+    }
+  }
+}
+
+/* Dark mode specific styles */
+@layer components {
+  .dark {
+    color-scheme: dark;
+  }
+
+  .dark input,
+  .dark textarea,
+  .dark select {
+    color-scheme: dark;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    @apply bg-white text-black;
+  }
+
+  .no-print {
+    @apply hidden;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

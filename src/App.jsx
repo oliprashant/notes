@@ -1,7 +1,7 @@
 // src/App.jsx
 // ──────────────────────────────────────────────────────────────
 // Root component. Handles auth state, routing between login and
-// main app, and layout composition.
+// main app, and layout composition. Now with modern design system!
 // ──────────────────────────────────────────────────────────────
 
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
 import { useDarkMode } from './hooks/useDarkMode'
+import { ThemeProvider, useTheme } from './context/ThemeContext'
 import LoginPage      from './components/Auth/LoginPage'
 import NoteList       from './components/Notes/NoteList'
 import NoteEditor     from './components/Notes/NoteEditor'
@@ -22,6 +23,7 @@ import ProfilePage    from './components/Profile/ProfilePage'
 import FeedPage       from './components/Social/FeedPage'
 import SearchPage     from './components/Social/SearchPage'
 import NotificationCenter from './components/Social/NotificationCenter'
+import LoadingSpinner from './components/Common/LoadingSpinner'
 import {
   PenLine, BotMessageSquare, Upload, LogOut, Lock, Plus, User,
   Menu, X, Search, Sun, Moon, Trash2, Clock, Settings, Bell, Compass

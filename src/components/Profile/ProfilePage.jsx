@@ -14,6 +14,7 @@ import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage
 import { useAuth } from '../../hooks/useAuth'
 import { useDarkMode } from '../../hooks/useDarkMode'
 import { storage } from '../../firebase/config'
+import { generateTOTPSecret, generateBackupCodes } from '../../utils/totpUtils'
 import {
   calculateCompleteness,
   checkIsFollowing,
@@ -63,7 +64,7 @@ function toErrorMessage(error) {
 }
 
 function randomBackupCodes() {
-  return Array.from({ length: 6 }).map(() => Math.random().toString(36).slice(2, 10).toUpperCase())
+  return generateBackupCodes(8)
 }
 
 /**
@@ -407,12 +408,21 @@ export default function ProfilePage({ viewedUserId = null }) {
 
   const onEnable2FA = async () => {
     if (!isOwnProfile) return
-    setProfile((prev) => ({
-      ...prev,
-      twoFactorEnabled: true,
-      backupCodes: prev.backupCodes.length ? prev.backupCodes : randomBackupCodes(),
-    }))
-    pushToast('success', '2FA toggled on. Complete your MFA enrollment flow before relying on it.')
+    try {
+      const { secret, qrCodeUrl } = await generateTOTPSecret(user?.email || 'user', 'Noteflow')
+      const backupCodes = randomBackupCodes()
+      setProfile((prev) => ({
+        ...prev,
+        twoFactorEnabled: true,
+        totpSecret: secret,
+        totpQRCode: qrCodeUrl,
+        backupCodes,
+      }))
+      pushToast('success', 'Scan the QR code with your authenticator app. Save your backup codes.')
+    } catch (err) {
+      console.error('Error generating TOTP secret:', err)
+      pushToast('error', 'Failed to set up 2FA. Please try again.')
+    }
   }
 
   const onDisable2FA = async () => {
@@ -649,8 +659,9 @@ export default function ProfilePage({ viewedUserId = null }) {
                 <TwoFASetup
                   enabled={profile.twoFactorEnabled}
                   loading={false}
-                  qrCodeUrl=""
-                  backupCodes={profile.backupCodes}
+                  qrCodeUrl={profile.totpQRCode || ''}
+                  backupCodes={profile.backupCodes || []}
+                  totpSecret={profile.totpSecret}
                   onEnable={onEnable2FA}
                   onDisable={onDisable2FA}
                 />
