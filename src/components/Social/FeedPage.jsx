@@ -268,7 +268,7 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-parchment-50 dark:bg-dark-bg p-4 md:p-8">
+    <div className="h-full overflow-y-auto bg-parchment-50 dark:bg-dark-bg p-4 md:p-8 animate-fade-up">
       <div className="mx-auto max-w-4xl space-y-4">
         <div className="text-center text-xs text-ink-muted dark:text-dark-muted" style={{ height: pullDistance > 0 ? `${pullDistance}px` : '0px' }}>
           {pullDistance > 70 ? 'Release to refresh' : pullDistance > 0 ? 'Pull to refresh' : ''}
@@ -276,15 +276,15 @@ export default function FeedPage() {
 
         <header className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-ink dark:text-dark-text">Feed</h1>
-            <p className="text-sm text-ink-muted dark:text-dark-muted">Algorithmic discovery tuned for engagement and freshness.</p>
+            <h1 className="text-2xl font-heading font-semibold text-ink dark:text-dark-text">Feed</h1>
+            <p className="text-sm text-ink-light dark:text-dark-secondary">Algorithmic discovery tuned for engagement and freshness.</p>
           </div>
 
-          <div className="inline-flex rounded-lg border border-parchment-200 dark:border-dark-border p-1 bg-white dark:bg-dark-surface flex-wrap">
+          <div className="inline-flex rounded-xl border border-parchment-200 dark:border-dark-border p-1 bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm flex-wrap shadow-sm">
             <button
               type="button"
               onClick={() => setShowComposer((prev) => !prev)}
-              className="px-3 py-1.5 rounded-md text-sm font-medium bg-sage text-white hover:bg-sage-light"
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-sage dark:bg-sage-dark text-white hover:bg-sage-light dark:hover:bg-sage-darkHover transition-colors"
             >
               {showComposer ? 'Hide create' : 'Create post'}
             </button>

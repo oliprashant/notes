@@ -742,9 +742,9 @@ export default function NoteEditor({
   }
 
   const toolbarBtn = (active = false) => {
-    const base = 'px-2 py-1.5 rounded-md text-xs font-medium transition-colors inline-flex items-center justify-center gap-1'
-    const activeCls = 'bg-parchment-200 dark:bg-dark-hover text-ink dark:text-dark-text'
-    const idleCls = 'text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover'
+    const base = 'px-2 py-1.5 rounded-full text-xs font-medium transition-all duration-150 inline-flex items-center justify-center gap-1'
+    const activeCls = 'bg-white dark:bg-dark-elevated text-ink dark:text-dark-text shadow-sm'
+    const idleCls = 'text-ink-muted dark:text-dark-secondary hover:bg-white dark:hover:bg-dark-elevated'
     return `${base} ${active ? activeCls : idleCls}`
   }
 
@@ -803,7 +803,7 @@ export default function NoteEditor({
 
   // ── Editor ──────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full animate-fade-in bg-parchment-50 dark:bg-dark-bg">
+    <div className="flex flex-col h-full animate-fade-up bg-parchment-50 dark:bg-dark-bg">
       <div className="md:hidden px-4 py-2 border-b border-parchment-200 dark:border-dark-border bg-parchment-100/80 dark:bg-dark-surface/80 backdrop-blur-sm flex items-center justify-between">
         <span className="text-[11px] text-ink-muted dark:text-dark-muted">{wordCount} words</span>
         <span
@@ -816,8 +816,8 @@ export default function NoteEditor({
 
       {/* Desktop toolbar */}
       <div className="hidden md:block flex-shrink-0">
-        <div className="px-6 py-3 border-b border-parchment-200 dark:border-dark-border">
-          <div className="flex flex-wrap items-center gap-1.5">
+        <div className="px-6 py-3 border-b border-parchment-200/80 dark:border-dark-border bg-white/70 dark:bg-dark-surface/70 backdrop-blur-xl">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-full bg-parchment-100/90 dark:bg-dark-elevated/90 px-2 py-1">
             <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().toggleBold().run()} className={toolbarBtn(editor?.isActive('bold'))} aria-label="Bold" title="Bold"><Bold size={13} /></button>
             <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().toggleItalic().run()} className={toolbarBtn(editor?.isActive('italic'))} aria-label="Italic" title="Italic"><Italic size={13} /></button>
             <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().toggleUnderline().run()} className={toolbarBtn(editor?.isActive('underline'))} aria-label="Underline" title="Underline"><UnderlineIcon size={13} /></button>
@@ -869,11 +869,9 @@ export default function NoteEditor({
           </div>
         </div>
 
-        <div className="h-px bg-parchment-200 dark:bg-dark-border" />
-
-        <div className="px-6 py-3 border-b border-parchment-200 dark:border-dark-border">
+        <div className="px-6 py-3 border-b border-parchment-200/80 dark:border-dark-border bg-white/65 dark:bg-dark-surface/65 backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-1.5">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 rounded-full bg-parchment-100/90 dark:bg-dark-elevated/90 px-2 py-1">
               <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().setTextAlign('left').run()} className={toolbarBtn(editor?.isActive({ textAlign: 'left' }))} aria-label="Align left" title="Align left"><AlignLeft size={13} /></button>
               <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().setTextAlign('center').run()} className={toolbarBtn(editor?.isActive({ textAlign: 'center' }))} aria-label="Align center" title="Align center"><AlignCenter size={13} /></button>
               <button onMouseDown={keepEditorFocus} onClick={() => editor?.chain().focus().setTextAlign('right').run()} className={toolbarBtn(editor?.isActive({ textAlign: 'right' }))} aria-label="Align right" title="Align right"><AlignRight size={13} /></button>
@@ -1035,7 +1033,7 @@ export default function NoteEditor({
         <button
           type="button"
           onClick={() => setIsBottomSheetOpen((v) => !v)}
-          className="fixed bottom-24 right-4 z-[60] w-[52px] h-[52px] rounded-full bg-sage text-white shadow-lg hover:bg-sage-light transition-colors flex items-center justify-center"
+          className="fixed bottom-24 right-4 z-[60] w-[52px] h-[52px] rounded-full bg-sage dark:bg-sage-dark text-white shadow-lg hover:bg-sage-light dark:hover:bg-sage-darkHover transition-colors flex items-center justify-center"
           aria-label={isBottomSheetOpen ? 'Close toolbar actions' : 'Open toolbar actions'}
           title={isBottomSheetOpen ? 'Close actions' : 'Open actions'}
         >
@@ -1044,9 +1042,9 @@ export default function NoteEditor({
 
         {isBottomSheetOpen && (
           <div className="fixed inset-0 z-50">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setIsBottomSheetOpen(false)} />
-            <div className="absolute bottom-0 left-0 right-0 rounded-t-2xl bg-white dark:bg-dark-surface border-t border-parchment-200 dark:border-dark-border px-4 pt-3 pb-6 max-h-[60vh] overflow-y-auto animate-bottom-sheet-up">
-              <div className="w-12 h-1.5 rounded-full bg-parchment-300 dark:bg-dark-border mx-auto mb-4" />
+            <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={() => setIsBottomSheetOpen(false)} />
+            <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-white/92 dark:bg-dark-surface/92 backdrop-blur-xl border-t border-parchment-200 dark:border-dark-border px-4 pt-3 pb-6 max-h-[60vh] overflow-y-auto animate-bottom-sheet-up">
+              <div className="w-12 h-1.5 rounded-full bg-parchment-200 dark:bg-dark-border mx-auto mb-4" />
 
               <div className="space-y-4">
                 <div>
@@ -1333,14 +1331,14 @@ export default function NoteEditor({
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 md:px-12 py-8">
+        <div className="max-w-[720px] mx-auto px-6 md:px-10 py-10">
           {/* Title */}
           <input
             type="text"
             value={title}
             onChange={handleTitleChange}
             placeholder="Untitled"
-            className="w-full font-serif text-3xl font-semibold text-ink dark:text-dark-text bg-transparent
+            className="w-full font-heading text-[32px] font-semibold text-ink dark:text-dark-text bg-transparent
                        border-none outline-none placeholder:text-ink-muted/40 dark:placeholder:text-dark-muted/50 mb-6
                        leading-tight"
             aria-label="Note title"
@@ -1373,10 +1371,11 @@ export default function NoteEditor({
         </div>
       </div>
 
-      <div className="px-6 py-2 border-t border-parchment-200 dark:border-dark-border flex-shrink-0">
-        <p className="text-[11px] text-ink-muted/60 dark:text-dark-muted/80 font-mono">
-          Rich text: bold, headings, lists, alignment, colors, highlight, and quotes
-        </p>
+      <div className="px-6 py-2 border-t border-parchment-200/80 dark:border-dark-border flex-shrink-0 bg-white/60 dark:bg-dark-surface/70 backdrop-blur-sm">
+        <div className="flex items-center justify-between text-[11px] text-ink-muted/70 dark:text-dark-muted/80">
+          <span>{wordCount} words</span>
+          <span className={`${saved ? 'text-sage dark:text-sage-dark' : 'text-ink-muted dark:text-dark-secondary'}`}>{saved ? 'Saved' : 'Saving...'}</span>
+        </div>
       </div>
     </div>
   )

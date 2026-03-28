@@ -58,17 +58,17 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
       aria-label={isLocked ? 'Note: Locked Note' : `Note: ${note.title}`}
       style={(!isLocked && note.color) ? { borderLeft: `3px solid ${note.color}` } : undefined}
       className={`
-        group relative flex flex-col gap-0.5 p-3 rounded-lg cursor-pointer
-        transition-all duration-100 outline-none focus-visible:ring-2 focus-visible:ring-sage
+        group relative flex flex-col gap-0.5 p-3 rounded-xl cursor-pointer
+        transition-all duration-150 outline-none
         ${isSelected
-          ? 'bg-white dark:bg-dark-hover shadow-note border border-parchment-200 dark:border-dark-border'
-          : 'hover:bg-white/60 dark:hover:bg-dark-hover/70'
+          ? 'bg-white dark:bg-dark-elevated shadow-md'
+          : 'hover:bg-white/70 dark:hover:bg-dark-elevated/70 hover:-translate-y-[1px]'
         }
       `}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className={`text-sm font-medium truncate leading-snug inline-flex items-center gap-1.5
-          ${isSelected ? 'text-ink dark:text-dark-text' : 'text-ink-light dark:text-dark-muted'}`}>
+        <h3 className={`text-[14px] font-medium truncate leading-snug inline-flex items-center gap-1.5
+          ${isSelected ? 'text-ink dark:text-dark-text' : 'text-ink-light dark:text-dark-secondary'}`}>
           {!isLocked && note.locked && <Lock size={12} className="flex-shrink-0 text-ink-muted dark:text-dark-muted" aria-hidden="true" />}
           <span className="truncate">{isLocked ? '🔒 Locked Note' : (note.title || 'Untitled')}</span>
         </h3>
@@ -83,7 +83,7 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
             className={`flex-shrink-0 p-1 rounded transition-all duration-100
               ${isFavourite
                 ? 'opacity-100 text-amber-500 dark:text-amber-400'
-                : 'opacity-0 group-hover:opacity-100 text-ink-muted dark:text-dark-muted hover:text-amber-500 dark:hover:text-amber-400'
+                : 'opacity-0 group-hover:opacity-100 text-ink-muted dark:text-dark-secondary hover:text-amber-500 dark:hover:text-amber-400'
               }`}
             aria-label={isFavourite ? 'Remove from starred' : 'Add to starred'}
             title={isFavourite ? 'Remove from starred' : 'Add to starred'}
@@ -99,8 +99,8 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
             }}
             className={`flex-shrink-0 p-1 rounded transition-all duration-100
               ${isPinned
-                ? 'opacity-100 text-sage dark:text-sage-light'
-                : 'opacity-0 group-hover:opacity-100 text-ink-muted dark:text-dark-muted hover:text-sage dark:hover:text-sage-light'
+                ? 'opacity-100 text-sage dark:text-sage-dark'
+                : 'opacity-0 group-hover:opacity-100 text-ink-muted dark:text-dark-secondary hover:text-sage dark:hover:text-sage-dark'
               }`}
             aria-label={isPinned ? 'Unpin note' : 'Pin note'}
             title={isPinned ? 'Unpin note' : 'Pin note'}
@@ -156,7 +156,7 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
       )}
 
       <time
-        className="text-[11px] text-ink-muted/70 dark:text-dark-muted/80 mt-0.5"
+        className="text-[11px] text-ink-muted/70 dark:text-dark-muted/80 mt-1"
         dateTime={note.updatedAt?.toISOString?.()}
       >
         {isLocked && <span className="font-medium">🔒 Locked </span>}

@@ -54,19 +54,19 @@ export default function HomePage({
   const starredCount = notes.filter((note) => note.favourite).length
 
   return (
-    <div className="h-full overflow-y-auto px-4 md:px-8 py-8 md:py-10 animate-fade-in font-sans">
-      <div className="max-w-2xl mx-auto space-y-8">
+    <div className="h-full overflow-y-auto px-4 md:px-8 py-8 md:py-10 animate-fade-up font-sans">
+      <div className="max-w-4xl mx-auto space-y-10">
         <section className="space-y-1.5">
-          <h1 className="font-serif text-3xl md:text-4xl font-semibold text-ink dark:text-dark-text">
+          <h1 className="font-heading text-[2.2rem] md:text-[2.7rem] font-semibold text-ink dark:text-dark-text tracking-tight leading-tight">
             {greeting}, {firstName}
           </h1>
-          <p className="text-sm text-ink-muted dark:text-dark-muted">
+          <p className="text-sm text-ink-light dark:text-dark-secondary">
             {todayText} · {notes.length} notes
           </p>
         </section>
 
         <section className="pt-1 pb-4 border-b border-parchment-200/80 dark:border-dark-border/80">
-          <p className="text-sm text-ink-muted dark:text-dark-muted flex flex-wrap items-center gap-2">
+          <p className="text-sm text-ink-light dark:text-dark-secondary flex flex-wrap items-center gap-2">
             <span>{notes.length} notes</span>
             <span className="text-ink-muted/60 dark:text-dark-muted/60">|</span>
             <span>{totalWords} words</span>
@@ -79,7 +79,7 @@ export default function HomePage({
 
         {pinnedNotes.length > 0 && (
           <section className="space-y-3 pt-1">
-            <h2 className="text-sm font-medium text-ink-muted dark:text-dark-muted inline-flex items-center gap-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted dark:text-dark-muted inline-flex items-center gap-2">
               <Pin size={14} />
               Pinned
             </h2>
@@ -99,7 +99,7 @@ export default function HomePage({
                   }}
                   role="button"
                   tabIndex={0}
-                  className="group relative min-w-[180px] text-left rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:shadow-sm transition-shadow overflow-hidden"
+                  className="group relative min-w-[210px] text-left rounded-xl bg-white dark:bg-dark-surface hover:-translate-y-[2px] hover:shadow-md transition-all duration-150 overflow-hidden"
                 >
                   <div className="absolute top-2 right-2 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-10">
                     <button
@@ -163,8 +163,8 @@ export default function HomePage({
         )}
 
         <section className="space-y-3 pt-1 border-t border-parchment-200/80 dark:border-dark-border/80">
-          <h2 className="pt-4 text-sm font-medium text-ink-muted dark:text-dark-muted">Recent</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <h2 className="pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted dark:text-dark-muted">Recent</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {recentNotes.map((note) => {
               const isThisNoteUnlocked = unlockedNoteIds.includes(note.id)
               const hiddenLocked = note.locked && !isThisNoteUnlocked
@@ -180,7 +180,7 @@ export default function HomePage({
                 }}
                 role="button"
                 tabIndex={0}
-                className="group relative text-left rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:shadow-sm transition-shadow overflow-hidden"
+                className="group relative text-left rounded-xl bg-white dark:bg-dark-surface hover:-translate-y-[2px] hover:shadow-md transition-all duration-150 overflow-hidden"
               >
                 <div className="absolute top-2 right-2 inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity z-10">
                   <button
@@ -256,14 +256,14 @@ export default function HomePage({
           <div className="pt-5 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={onNewNote}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sage text-white hover:bg-sage-light transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sage dark:bg-sage-dark text-white hover:bg-sage-light dark:hover:bg-sage-darkHover hover:scale-[1.02] transition-all duration-150"
             >
               <span className="text-base leading-none">+</span>
               New Note
             </button>
             <button
               onClick={onBrowseAll}
-              className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg border border-parchment-200 dark:border-dark-border text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors"
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white dark:bg-dark-elevated text-ink dark:text-dark-text hover:shadow-sm transition-all duration-150"
             >
               Browse All Notes
             </button>

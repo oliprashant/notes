@@ -133,9 +133,9 @@ function PinBoxes({
           onChange={(event) => updateDigit(index, event.target.value)}
           onKeyDown={(event) => handleKeyDown(event, index)}
           onPaste={handlePaste}
-          className={`w-[52px] h-[64px] rounded-xl border text-center text-2xl font-semibold bg-white dark:bg-dark-bg text-ink dark:text-dark-text transition-all outline-none ${
+          className={`w-[60px] h-[72px] rounded-xl border text-center text-2xl font-semibold bg-white/90 dark:bg-dark-elevated text-ink dark:text-dark-text transition-all duration-150 outline-none ${
             activeIndex === index
-              ? 'border-sage shadow-[0_0_0_2px_rgba(92,122,92,0.15)]'
+              ? 'border-sage dark:border-sage-dark shadow-[0_0_0_3px_rgba(45,106,79,0.15)] dark:shadow-[0_0_0_3px_rgba(74,222,128,0.15)]'
               : 'border-parchment-200 dark:border-dark-border'
           }`}
           aria-label={`PIN digit ${index + 1}`}
@@ -198,9 +198,9 @@ export default function LockScreen({ mode = 'unlock', onSuccess, onCancel }) {
 
   return (
     <div className="flex-1 flex items-center justify-center px-6 bg-parchment-50 dark:bg-dark-bg">
-      <div className="w-full max-w-md rounded-2xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface p-6 md:p-8 text-center shadow-panel space-y-5">
-        <div className="w-16 h-16 mx-auto rounded-full bg-sage-pale dark:bg-sage/20 flex items-center justify-center">
-          <Lock size={30} className="text-sage" />
+      <div className="w-full max-w-md rounded-2xl border border-parchment-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/90 backdrop-blur-xl p-6 md:p-8 text-center shadow-lg space-y-5 animate-scale-in">
+        <div className="w-16 h-16 mx-auto rounded-full bg-sage-pale dark:bg-sage-darkPale flex items-center justify-center animate-pulse-subtle">
+          <Lock size={30} className="text-sage dark:text-sage-dark" />
         </div>
 
         {mode === 'setup' ? (

@@ -4,7 +4,7 @@
 // main app, and layout composition. Now with modern design system!
 // ──────────────────────────────────────────────────────────────
 
-import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
+import { useState, useEffect, lazy, Suspense, useMemo, useRef } from 'react'
 import { Link, useLocation, useNavigate, Routes, Route } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
@@ -101,6 +101,8 @@ export default function App() {
   // Active tag filter
   const [selectedTag, setSelectedTag] = useState(null)
   const [guestBannerDismissed, setGuestBannerDismissed] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef(null)
 
   const LazyAIAssistant = useMemo(
     () => lazy(() =>
@@ -152,6 +154,19 @@ export default function App() {
       setGuestBannerDismissed(false)
     }
   }, [isGuest])
+
+  useEffect(() => {
+    if (!showUserMenu) return
+
+    const handleOutsideClick = (event) => {
+      if (!userMenuRef.current?.contains(event.target)) {
+        setShowUserMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [showUserMenu])
 
   const pathname = location.pathname
   const isAiRoute = pathname === '/ai'
@@ -355,218 +370,117 @@ export default function App() {
   return (
     <div className="h-full flex flex-col bg-parchment-50 dark:bg-dark-bg text-ink dark:text-dark-text">
       {/* ── Top bar ─────────────────────────────────────────── */}
-      <header className="h-14 border-b border-parchment-200 dark:border-dark-border bg-parchment-50 dark:bg-dark-bg flex items-center px-4 gap-3 flex-shrink-0 z-20">
-        {/* Mobile menu toggle */}
+      <header className="h-[52px] border-b border-parchment-200/90 dark:border-dark-border/90 bg-white/80 dark:bg-black/80 backdrop-blur-xl flex items-center px-4 gap-3 flex-shrink-0 z-20">
         {currentView === 'editor' && (
           <button
-            className="lg:hidden p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-            onClick={() => setSidebarOpen(v => !v)}
+            className="lg:hidden p-1.5 rounded-xl text-ink-muted dark:text-dark-secondary hover:bg-parchment-100 dark:hover:bg-dark-elevated transition-all duration-150"
+            onClick={() => setSidebarOpen((v) => !v)}
             aria-label="Toggle sidebar"
           >
             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         )}
 
-        {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 mr-auto"
-          aria-label="Go to home"
-        >
-          <div className="w-7 h-7 rounded-md bg-sage flex items-center justify-center">
-            <PenLine size={14} className="text-white" />
-          </div>
-          <span className="font-serif font-semibold text-ink dark:text-dark-text text-lg tracking-tight hidden sm:block">
-            Noteflow
-          </span>
+        <Link to="/" className="flex items-center gap-2 mr-auto" aria-label="Go to home">
+          <span className="w-2.5 h-2.5 rounded-full bg-sage dark:bg-sage-dark inline-flex" />
+          <span className="font-heading font-semibold text-[1.05rem] text-ink dark:text-dark-text tracking-tight">NoteFlow</span>
         </Link>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1">
-          {/* Theme toggle */}
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={toggleDarkMode}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-pressed={isDark}
-            title={isDark ? 'Light mode' : 'Dark mode'}
+            onClick={() => navigate('/search')}
+            className="w-8 h-8 rounded-xl text-ink-muted dark:text-dark-secondary hover:bg-parchment-100 dark:hover:bg-dark-elevated hover:text-ink dark:hover:text-dark-text transition-all duration-150"
+            title="Search"
+            aria-label="Search"
           >
-            {isDark ? <Sun size={15} /> : <Moon size={15} />}
-            <span className="hidden sm:inline">{isDark ? 'Light' : 'Dark'}</span>
-          </button>
-
-          {/* Import */}
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-ink-light dark:text-dark-text
-                       rounded-md hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-            aria-label="Import files"
-          >
-            <Upload size={15} />
-            <span className="hidden sm:inline">Import</span>
-          </button>
-
-          {/* AI toggle */}
-          <button
-            onClick={handleOpenAiPanel}
-            disabled={!canUseAI}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-              ${isAiOpen
-                ? 'bg-sage text-white'
-                : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
-              }`}
-            aria-label="Open AI assistant"
-            aria-pressed={isAiOpen}
-            title={canUseAI ? 'AI assistant' : aiDisabledReason}
-          >
-            <BotMessageSquare size={15} />
-            <span className="hidden sm:inline">AI</span>
-            {!canUseAI && <span className="text-[10px] uppercase tracking-wide">Disabled</span>}
+            <Search size={16} className="mx-auto" />
           </button>
 
           <button
-            onClick={() => setIsSettingsOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors
-              ${isSettingsOpen
-                ? 'bg-sage text-white'
-                : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
-              }`}
-            aria-label="Open settings"
-            title="Settings"
-            aria-pressed={isSettingsOpen}
+            onClick={() => navigate('/notifications')}
+            className="w-8 h-8 rounded-xl text-ink-muted dark:text-dark-secondary hover:bg-parchment-100 dark:hover:bg-dark-elevated hover:text-ink dark:hover:text-dark-text transition-all duration-150"
+            title="Notifications"
+            aria-label="Open notifications"
           >
-            <Settings size={15} />
-            <span className="hidden sm:inline">Settings</span>
+            <Bell size={16} className="mx-auto" />
           </button>
 
-          {!isGuest && (
+          <div className="relative" ref={userMenuRef}>
             <button
-              onClick={handleOpenHistory}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-              aria-label="Open note history"
-              title="History"
-              disabled={!selectedNote || historyLoading}
+              type="button"
+              onClick={() => setShowUserMenu((v) => !v)}
+              className="w-8 h-8 rounded-full ring-1 ring-parchment-200 dark:ring-dark-border hover:scale-[1.02] transition-transform"
+              aria-label="Open user menu"
+              aria-expanded={showUserMenu}
             >
-              <Clock size={15} />
-              <span className="hidden sm:inline">History</span>
-            </button>
-          )}
-
-          {isGuest && (
-            <button
-              onClick={handleNewNote}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-              aria-label="Create new note"
-              title="New Note"
-            >
-              <Plus size={15} />
-              <span className="hidden sm:inline">New Note</span>
-            </button>
-          )}
-
-          {hasLockedNotes && (
-            <button
-              onClick={() => {
-                setUnlockedNoteIds([])
-                if (selectedNote?.locked) {
-                  setShowPinEntry(true)
-                }
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                unlockedNoteIds.length > 0
-                  ? 'bg-sage text-white hover:bg-sage-light'
-                  : 'text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover'
-              }`}
-              aria-label="Lock session"
-              title="Lock session"
-            >
-              <Lock size={15} />
-              <span className="hidden sm:inline">Lock Session</span>
-            </button>
-          )}
-
-          {/* Trash */}
-          <button
-            onClick={() => setTrashOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md text-ink-light dark:text-dark-text hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
-            aria-label="Open trash"
-            title="Trash"
-          >
-            <Trash2 size={15} />
-            <span className="hidden sm:inline">Trash</span>
-          </button>
-
-          {/* User + sign out */}
-          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-parchment-200 dark:border-dark-border">
-            <button
-              onClick={() => navigate('/feed')}
-              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
-              title="Feed"
-              aria-label="Open feed"
-            >
-              <Compass size={16} />
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName ?? 'User avatar'} className="w-8 h-8 rounded-full" />
+              ) : (
+                <span className="w-8 h-8 rounded-full bg-parchment-100 dark:bg-dark-elevated inline-flex items-center justify-center">
+                  <User size={14} className="text-ink-muted dark:text-dark-secondary" />
+                </span>
+              )}
             </button>
 
-            <button
-              onClick={() => navigate('/search')}
-              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
-              title="Search users"
-              aria-label="Search users"
-            >
-              <Search size={16} />
-            </button>
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-parchment-200 dark:border-dark-border bg-white/90 dark:bg-dark-surface/95 backdrop-blur-xl shadow-lg p-2 animate-scale-in z-40">
+                <div className="px-3 py-2.5">
+                  <p className="text-sm font-medium text-ink dark:text-dark-text truncate">{user.displayName || 'Guest user'}</p>
+                  <p className="text-xs text-ink-muted dark:text-dark-secondary truncate">{user.email || 'guest@noteflow.local'}</p>
+                </div>
 
-            <button
-              onClick={() => navigate('/notifications')}
-              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
-              title="Notifications"
-              aria-label="Open notifications"
-            >
-              <Bell size={16} />
-            </button>
+                <div className="h-px bg-parchment-200 dark:bg-dark-border my-1" />
 
-            {isGuest ? (
-              <div className="w-7 h-7 rounded-full bg-parchment-200 dark:bg-dark-hover flex items-center justify-center">
-                <User size={14} className="text-ink-muted dark:text-dark-muted" />
+                <button
+                  onClick={() => {
+                    toggleDarkMode()
+                    setShowUserMenu(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated transition-colors"
+                >
+                  {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                  {isDark ? 'Light mode' : 'Dark mode'}
+                </button>
+
+                <div className="h-px bg-parchment-200 dark:bg-dark-border my-1" />
+
+                <button onClick={() => { navigate('/feed'); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Feed</button>
+                <button onClick={() => { navigate('/profile'); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Profile</button>
+                <button onClick={() => { handleOpenAiPanel(); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">AI assistant</button>
+                <button onClick={() => { setIsSettingsOpen(true); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Settings</button>
+                <button onClick={() => { setImportOpen(true); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Import files</button>
+                {!isGuest && (
+                  <button onClick={() => { handleOpenHistory(); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">History</button>
+                )}
+                <button onClick={() => { setTrashOpen(true); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Trash</button>
+
+                {hasLockedNotes && (
+                  <button
+                    onClick={() => {
+                      setUnlockedNoteIds([])
+                      if (selectedNote?.locked) setShowPinEntry(true)
+                      setShowUserMenu(false)
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated"
+                  >
+                    Lock session
+                  </button>
+                )}
+
+                <div className="h-px bg-parchment-200 dark:bg-dark-border my-1" />
+
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false)
+                    signOutUser()
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated transition-colors"
+                >
+                  <LogOut size={15} />
+                  Sign out
+                </button>
               </div>
-            ) : (
-              user.photoURL && (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName ?? 'User avatar'}
-                  className="w-7 h-7 rounded-full"
-                />
-              )
             )}
-
-            <button
-              onClick={() => navigate('/profile')}
-              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
-              title="Profile"
-              aria-label="Open profile"
-            >
-              <User size={16} />
-            </button>
-
-            {isGuest && (
-              <button
-                onClick={signOutUser}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-sage text-white hover:bg-sage-light transition-colors"
-                title="Create account"
-                aria-label="Sign up"
-              >
-                Sign Up
-              </button>
-            )}
-
-            <button
-              onClick={signOutUser}
-              className="p-1.5 rounded-md text-ink-muted dark:text-dark-muted hover:bg-parchment-200 dark:hover:bg-dark-hover hover:text-ink dark:hover:text-dark-text transition-colors"
-              title="Sign out"
-              aria-label="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
           </div>
         </div>
       </header>
@@ -584,9 +498,9 @@ export default function App() {
         <Route
           path="/"
           element={
-            <div className="flex flex-1 overflow-hidden relative">
-              <aside className="hidden lg:flex w-72 flex-col bg-parchment-100 dark:bg-dark-surface border-r border-parchment-200 dark:border-dark-border">
-                <div className="p-3 border-b border-parchment-200 dark:border-dark-border">
+            <div className="flex flex-1 overflow-hidden relative animate-fade-up">
+              <aside className="hidden lg:flex w-[260px] flex-col bg-parchment-100/80 dark:bg-dark-surface/80 backdrop-blur-sm">
+                <div className="p-3">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-muted" />
                     <input
@@ -594,7 +508,7 @@ export default function App() {
                       placeholder="Search notes..."
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-dark-bg border border-parchment-200 dark:border-dark-border rounded-lg placeholder:text-ink-muted dark:placeholder:text-dark-muted text-ink dark:text-dark-text outline-none focus:border-sage transition-colors"
+                      className="w-full pl-8 pr-3 py-2.5 text-sm bg-white/90 dark:bg-dark-elevated/80 rounded-xl placeholder:text-ink-muted dark:placeholder:text-dark-secondary text-ink dark:text-dark-text outline-none focus:ring-2 focus:ring-sage/30 dark:focus:ring-sage-dark/30 transition-all"
                       aria-label="Search notes"
                     />
                   </div>
@@ -621,9 +535,23 @@ export default function App() {
               onToggleFavourite={toggleFavourite}
               unlockedNoteIds={unlockedNoteIds}
             />
+
+            <div className="mx-3 mb-3 mt-auto rounded-xl bg-white/70 dark:bg-dark-elevated/80 px-3 py-2.5 flex items-center gap-2">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName ?? 'User avatar'} className="w-7 h-7 rounded-full" />
+              ) : (
+                <span className="w-7 h-7 rounded-full bg-parchment-200 dark:bg-dark-border inline-flex items-center justify-center">
+                  <User size={13} className="text-ink-muted dark:text-dark-secondary" />
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-ink dark:text-dark-text truncate">{user.displayName || 'Guest user'}</p>
+                <p className="text-[11px] text-ink-muted dark:text-dark-secondary truncate">{user.email || 'guest@noteflow.local'}</p>
+              </div>
+            </div>
           </aside>
 
-          <main className="flex-1 overflow-hidden" role="main">
+          <main className="flex-1 overflow-hidden bg-parchment-50 dark:bg-dark-bg" role="main">
             <HomePage
               notes={notes}
               user={user}
@@ -661,7 +589,7 @@ export default function App() {
           />
 
           <aside
-            className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-md bg-white dark:bg-dark-surface border-l border-parchment-200 dark:border-dark-border flex flex-col animate-slide-in-right md:w-80 xl:w-96"
+            className="fixed inset-y-0 right-0 z-50 w-[92vw] max-w-md bg-white/90 dark:bg-dark-surface/90 backdrop-blur-xl border-l border-parchment-200 dark:border-dark-border flex flex-col animate-slide-in-right md:w-80 xl:w-96"
             aria-label="AI assistant panel"
           >
             <Suspense
@@ -695,8 +623,8 @@ export default function App() {
 
       {historyOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-ink/30 dark:bg-black/50" onClick={() => setHistoryOpen(false)} />
-          <div className="relative z-10 w-full max-w-5xl h-[80vh] overflow-hidden rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel flex">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xl" onClick={() => setHistoryOpen(false)} />
+          <div className="relative z-10 w-full max-w-5xl h-[80vh] overflow-hidden rounded-2xl border border-parchment-200/80 dark:border-dark-border bg-white/95 dark:bg-dark-surface/95 shadow-lg flex animate-scale-in">
             <aside className="w-80 border-r border-parchment-200 dark:border-dark-border overflow-y-auto">
               <div className="px-4 py-3 border-b border-parchment-200 dark:border-dark-border">
                 <p className="text-sm font-semibold text-ink dark:text-dark-text">History</p>
@@ -794,7 +722,7 @@ function SettingsModal({ open, onClose }) {
         aria-label="Close settings"
       />
 
-      <section className="relative z-10 w-full max-w-md rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel p-4">
+      <section className="relative z-10 w-full max-w-md rounded-2xl border border-parchment-200/80 dark:border-dark-border bg-white/95 dark:bg-dark-surface/95 shadow-lg p-5 animate-scale-in">
         <h2 className="text-sm font-semibold text-ink dark:text-dark-text">Settings</h2>
         <p className="text-sm text-ink-muted dark:text-dark-muted mt-2">Settings coming soon</p>
         <div className="mt-4 flex justify-end">

@@ -216,23 +216,22 @@ export default function LoginPage({
   return (
     <div className="min-h-full bg-parchment-50 dark:bg-dark-bg flex">
       {/* Left panel — decorative */}
-      <div className="hidden lg:flex lg:w-1/2 bg-parchment-100 dark:bg-dark-surface border-r border-parchment-200 dark:border-dark-border
-                      flex-col justify-between p-12 relative overflow-hidden">
-        {/* Subtle grid pattern */}
+      <div className="hidden lg:flex lg:w-1/2 bg-parchment-100 dark:bg-dark-surface flex-col justify-between p-12 relative overflow-hidden">
+        {/* Soft mesh background */}
         <div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-70"
           style={{
             backgroundImage: `
-              linear-gradient(to right, #D4D4C0 1px, transparent 1px),
-              linear-gradient(to bottom, #D4D4C0 1px, transparent 1px)
+              radial-gradient(circle at 20% 20%, rgba(45,106,79,0.2), transparent 35%),
+              radial-gradient(circle at 80% 10%, rgba(45,106,79,0.12), transparent 40%),
+              radial-gradient(circle at 70% 80%, rgba(26,26,24,0.08), transparent 45%)
             `,
-            backgroundSize: '40px 40px',
           }}
         />
 
         {/* Quote block */}
         <div className="relative mt-auto">
-          <p className="font-serif text-2xl text-ink dark:text-dark-text leading-snug mb-4">
+          <p className="font-heading text-3xl text-ink dark:text-dark-text leading-snug mb-4">
             "A note is a thought given<br />a place to live."
           </p>
           <p className="text-sm text-ink-muted dark:text-dark-muted font-medium">
@@ -248,14 +247,14 @@ export default function LoginPage({
 
       {/* Right panel — login form */}
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm animate-fade-in">
+        <div className="w-full max-w-sm animate-fade-up">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-sage flex items-center justify-center shadow-note">
+            <div className="w-10 h-10 rounded-xl bg-sage dark:bg-sage-dark flex items-center justify-center shadow-md">
               <PenLine size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="font-serif font-semibold text-xl text-ink dark:text-dark-text leading-none">
+              <h1 className="font-heading font-semibold text-xl text-ink dark:text-dark-text leading-none">
                 NoteFlow
               </h1>
               <p className="text-xs text-ink-muted dark:text-dark-muted mt-0.5">Your thoughts, organised</p>
@@ -265,13 +264,13 @@ export default function LoginPage({
           <div className="transition-all duration-200">
             {view === 'login' && (
               <div>
-                <h2 className="font-serif text-2xl font-semibold text-ink dark:text-dark-text mb-2">Welcome back</h2>
+                <h2 className="font-heading text-3xl font-semibold text-ink dark:text-dark-text mb-2">Welcome back</h2>
                 <p className="text-sm text-ink-muted dark:text-dark-muted mb-6">Sign in to access your notes from any device.</p>
 
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={loadingGoogle || loadingPrimary}
-                  className="w-full flex items-center justify-center gap-3 px-5 py-3 bg-white dark:bg-dark-bg border border-parchment-200 dark:border-dark-border rounded-xl text-ink dark:text-dark-text font-medium text-sm shadow-note hover:shadow-note-hover hover:border-ink/20 dark:hover:border-dark-muted transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 px-5 py-3 bg-white dark:bg-dark-elevated border border-parchment-200 dark:border-dark-border rounded-xl text-ink dark:text-dark-text font-medium text-sm shadow-sm hover:shadow-md transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
                   aria-label="Sign in with Google"
                 >
                   {loadingGoogle ? (
@@ -294,7 +293,7 @@ export default function LoginPage({
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full px-3 py-2.5 rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg text-sm text-ink dark:text-dark-text placeholder:text-ink-muted dark:placeholder:text-dark-muted outline-none focus:border-sage transition-colors"
+                    className="w-full px-3 py-2.5 rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-sm text-ink dark:text-dark-text placeholder:text-ink-muted dark:placeholder:text-dark-secondary outline-none focus:ring-2 focus:ring-sage/25 dark:focus:ring-sage-dark/25 transition-all"
                   />
 
                   <div className="relative">
@@ -303,7 +302,7 @@ export default function LoginPage({
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="Password"
-                      className="w-full px-3 py-2.5 pr-10 rounded-lg border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-bg text-sm text-ink dark:text-dark-text placeholder:text-ink-muted dark:placeholder:text-dark-muted outline-none focus:border-sage transition-colors"
+                      className="w-full px-3 py-2.5 pr-10 rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-sm text-ink dark:text-dark-text placeholder:text-ink-muted dark:placeholder:text-dark-secondary outline-none focus:ring-2 focus:ring-sage/25 dark:focus:ring-sage-dark/25 transition-all"
                     />
                     <button
                       type="button"
@@ -318,7 +317,7 @@ export default function LoginPage({
                   <button
                     type="submit"
                     disabled={loadingPrimary || loadingGoogle || !canSubmitLogin}
-                    className="w-full py-2.5 rounded-lg bg-sage text-white text-sm font-medium hover:bg-sage-light transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full py-2.5 rounded-xl bg-sage dark:bg-sage-dark text-white text-sm font-medium hover:bg-sage-light dark:hover:bg-sage-darkHover transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {loadingPrimary ? 'Signing in...' : 'Sign In'}
                   </button>
@@ -339,7 +338,7 @@ export default function LoginPage({
                     type="button"
                     onClick={handleGuestSignIn}
                     disabled={loadingPrimary || loadingGoogle}
-                    className="px-4 py-2 rounded-md border border-parchment-200 dark:border-dark-border text-sm text-ink-muted dark:text-dark-muted hover:bg-parchment-100 dark:hover:bg-dark-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="px-4 py-2 rounded-xl border border-parchment-200 dark:border-dark-border text-sm text-ink-muted dark:text-dark-secondary hover:bg-parchment-100 dark:hover:bg-dark-elevated transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     Continue as Guest
                   </button>

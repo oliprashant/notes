@@ -1,5 +1,4 @@
-/* src/index.css */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,10 +15,6 @@
   }
 }
 
-.animate-bottom-sheet-up {
-  animation: bottom-sheet-up 220ms ease-out;
-}
-
 @keyframes lock-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-6px); }
@@ -28,261 +23,198 @@
   80% { transform: translateX(4px); }
 }
 
+.animate-bottom-sheet-up {
+  animation: bottom-sheet-up 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .animate-lock-shake {
   animation: lock-shake 280ms ease-in-out;
 }
 
 @layer base {
+  :root {
+    --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   * {
     box-sizing: border-box;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
     margin: 0;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: #FAFAF7;
-    color: #1A1A18;
-    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    background-color: #f8f8f6;
+    color: #1a1a18;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   }
 
   .dark body {
-    background-color: #1C1C1A;
-    color: #E8E8E4;
+    background-color: #111110;
+    color: #ededea;
   }
 
-  /* Custom scrollbar */
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    transition-timing-function: var(--ease-premium);
+  }
+
   ::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
-    background: #D4D4CC;
+    background: rgba(107, 107, 100, 0.2);
     border-radius: 9999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
-    background: #ABABAA;
+    background: rgba(107, 107, 100, 0.35);
   }
 
-  .dark ::-webkit-scrollbar-track {
-    background: #1C1C1A;
-  }
   .dark ::-webkit-scrollbar-thumb {
-    background: #3A3A36;
-  }
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: #4A4A44;
+    background: rgba(138, 138, 130, 0.2);
   }
 
-  /* Focus ring */
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(138, 138, 130, 0.35);
+  }
+
+  ::selection,
+  input::selection,
+  textarea::selection {
+    background: rgba(45, 106, 79, 0.2);
+    color: #1a1a18;
+  }
+
+  .dark ::selection,
+  .dark input::selection,
+  .dark textarea::selection {
+    background: rgba(74, 222, 128, 0.2);
+    color: #ededea;
+  }
+
   :focus-visible {
-    outline: 2px solid #5C7A5C;
+    outline: 2px solid #2d6a4f;
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: 10px;
+  }
+
+  .dark :focus-visible {
+    outline-color: #4ade80;
   }
 }
 
 @layer components {
+  .glass {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(232, 232, 228, 0.7);
+  }
+
+  .dark .glass {
+    background: rgba(17, 17, 16, 0.8);
+    border-color: rgba(42, 42, 40, 0.9);
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(232, 232, 228, 0.45) 0%,
+      rgba(250, 250, 248, 0.95) 50%,
+      rgba(232, 232, 228, 0.45) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+
+  .dark .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(42, 42, 40, 0.45) 0%,
+      rgba(33, 33, 32, 0.9) 50%,
+      rgba(42, 42, 40, 0.45) 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  .prose-note {
+    @apply text-ink dark:text-dark-text text-[15px] leading-[1.85];
+  }
+
+  .prose-note h1 {
+    @apply font-heading text-[2rem] font-semibold mb-4 mt-6;
+  }
+
+  .prose-note h2 {
+    @apply font-heading text-2xl font-semibold mb-3 mt-5;
+  }
+
+  .prose-note h3 {
+    @apply font-semibold text-lg mb-2 mt-4;
+  }
+
+  .prose-note p {
+    @apply mb-4;
+  }
+
+  .prose-note a {
+    @apply text-sage dark:text-sage-dark underline decoration-sage/40;
+  }
+
+  .prose-note code {
+    @apply font-mono text-[13px] bg-parchment-100 dark:bg-dark-elevated px-1.5 py-0.5 rounded-md;
+  }
+
+  .prose-note pre {
+    @apply font-mono text-[13px] bg-parchment-100 dark:bg-dark-elevated p-4 rounded-xl overflow-auto mb-4;
+  }
+
+  .prose-note blockquote {
+    @apply border-l-2 border-sage/40 dark:border-sage-dark/60 pl-4 text-ink-light dark:text-dark-secondary italic mb-4;
+  }
+
+  .prose-note ul {
+    @apply list-disc pl-5 mb-4 space-y-1;
+  }
+
+  .prose-note ol {
+    @apply list-decimal pl-5 mb-4 space-y-1;
+  }
+
   .tiptap-content {
-    @apply min-h-[calc(100vh-300px)] rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface;
+    @apply min-h-[calc(100vh-300px)] rounded-xl bg-white dark:bg-dark-surface;
   }
 
   .tiptap-editor {
-    @apply min-h-[calc(100vh-300px)] p-6 text-[15px] leading-relaxed text-ink dark:text-dark-text outline-none;
+    @apply min-h-[calc(100vh-300px)] p-6 text-[16px] leading-[1.85] text-ink dark:text-dark-text outline-none;
+    caret-color: #2d6a4f;
   }
 
-  .tiptap-editor h1 {
-    @apply font-serif text-3xl font-semibold mt-6 mb-3;
+  .dark .tiptap-editor {
+    caret-color: #4ade80;
   }
-  .tiptap-editor h2 {
-    @apply font-serif text-2xl font-semibold mt-5 mb-3;
-  }
-  .tiptap-editor p {
-    @apply mb-3;
-  }
-  .tiptap-editor ul {
-    @apply list-disc pl-6 mb-3 space-y-1;
-  }
-  .tiptap-editor ol {
-    @apply list-decimal pl-6 mb-3 space-y-1;
-  }
-  .tiptap-editor blockquote {
-    @apply border-l-2 border-sage-light pl-4 text-ink-muted dark:text-dark-muted italic my-4;
-  }
-  .tiptap-editor strong {
-    @apply font-semibold;
-  }
-
-  /* Note textarea — raw, unadorned editing surface */
-  .note-textarea {
-    @apply w-full h-full resize-none bg-transparent border-none outline-none
-           text-ink dark:text-dark-text leading-relaxed font-sans text-[15px] p-0;
-    caret-color: #5C7A5C;
-  }
-
-  /* Markdown preview prose */
-  .prose-note {
-    @apply text-ink dark:text-dark-text text-[15px] leading-relaxed;
-  }
-  .prose-note a  { @apply text-sage dark:text-sage-light underline; }
-  .prose-note code { @apply font-mono text-[13px] bg-parchment-200 dark:bg-dark-hover px-1 py-0.5 rounded; }
-  .prose-note pre { @apply font-mono text-[13px] bg-parchment-200 dark:bg-dark-hover p-4 rounded-lg overflow-auto mb-3; }
-  .prose-note blockquote {
-    @apply border-l-2 border-sage-light pl-4 text-ink-muted dark:text-dark-muted italic mb-3;
-  }
-  .prose-note hr { @apply border-t border-parchment-200 dark:border-dark-border my-6; }
-  .prose-note h1 { @apply font-serif text-2xl font-semibold mb-3 mt-5; }
-  .prose-note h2 { @apply font-serif text-xl font-semibold mb-2 mt-4; }
-  .prose-note h3 { @apply font-semibold text-base mb-2 mt-3; }
-  .prose-note p  { @apply mb-3; }
-  .prose-note ul { @apply list-disc pl-5 mb-3 space-y-1; }
-  .prose-note ol { @apply list-decimal pl-5 mb-3 space-y-1; }
-  .prose-note strong { @apply font-semibold; }
 }
 
-/* ──────────────────────────────────────────────────────────────
-   Additional Global Styles (from globals.css)
-   ────────────────────────────────────────────────────────────── */
-
-* {
-  @apply box-border;
-}
-
-html {
-  @apply h-full scroll-smooth;
-}
-
-body {
-  @apply h-full m-0 bg-white dark:bg-dark-bg text-gray-900 dark:text-dark-text transition-colors duration-300;
-  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
-}
-
-#root {
-  @apply h-full;
-}
-
-/* Scrollbar Styles */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-dark-border rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400 dark:bg-dark-hover;
-}
-
-/* Selection */
-::selection {
-  @apply bg-blue-500 text-white;
-}
-
-::-moz-selection {
-  @apply bg-blue-500 text-white;
-}
-
-/* Focus visible for accessibility */
-:focus-visible {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-dark-bg rounded;
-}
-
-/* Text selection in inputs */
-input::selection,
-textarea::selection {
-  @apply bg-blue-500 text-white;
-}
-
-/* Placeholder styling */
-input::placeholder,
-textarea::placeholder {
-  @apply text-gray-400 dark:text-dark-muted;
-}
-
-/* Line clamp utilities */
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Smooth transitions */
-.transition-all-smooth {
-  @apply transition-all duration-300 ease-in-out;
-}
-
-/* Glass Morphism Effect */
-.glass {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.glass-dark {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  background: rgba(15, 23, 42, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Gradient Text */
-.gradient-text {
-  @apply bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent;
-}
-
-/* Shadow classes */
-.shadow-glow {
-  @apply shadow-lg;
-}
-
-.shadow-glow-blue {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-}
-
-/* Accessible focus for tabs */
-.focus-ring {
-  @apply focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-bg;
-}
-
-/* Scrollable container */
-.scrollable {
-  @apply overflow-y-auto;
-}
-
-/* Flex center */
-.center {
-  @apply flex items-center justify-center;
-}
-
-/* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -290,5 +222,6 @@ textarea::placeholder {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

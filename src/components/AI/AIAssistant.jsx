@@ -33,8 +33,8 @@ function MessageBubble({ message }) {
       <div
         className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed
           ${isUser
-            ? 'bg-sage text-white rounded-tr-sm'
-            : 'bg-parchment-100 dark:bg-parchment-900/30 text-ink dark:text-dark-text rounded-tl-sm'
+            ? 'bg-sage dark:bg-sage-dark text-white rounded-tr-sm'
+            : 'bg-white dark:bg-dark-elevated text-ink dark:text-dark-text rounded-tl-sm border border-parchment-200 dark:border-dark-border'
           }`}
       >
         {isUser ? (
@@ -195,7 +195,7 @@ export default function AIAssistant({ open = false, user, selectedNote = null, n
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-parchment-200 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-parchment-200 dark:border-dark-border bg-white/80 dark:bg-black/70 backdrop-blur-xl flex-shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-sage flex items-center justify-center">
             <Sparkles size={14} className="text-white" />
@@ -311,7 +311,7 @@ export default function AIAssistant({ open = false, user, selectedNote = null, n
       {/* Input form */}
       <form
         onSubmit={handleSubmit}
-        className="p-3 border-t border-parchment-200 flex-shrink-0"
+        className="p-3 border-t border-parchment-200 dark:border-dark-border flex-shrink-0 bg-white/70 dark:bg-dark-surface/70 backdrop-blur-xl"
       >
         <div className="flex gap-2 items-end">
           <textarea
@@ -327,8 +327,8 @@ export default function AIAssistant({ open = false, user, selectedNote = null, n
             placeholder="Ask anything… (Shift+Enter for newline)"
             disabled={loading}
             rows={1}
-            className="flex-1 px-3 py-2.5 text-sm bg-parchment-50 border border-parchment-200
-                       rounded-xl resize-none placeholder:text-ink-muted text-ink
+            className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-dark-elevated border border-parchment-200 dark:border-dark-border
+                       rounded-2xl resize-none placeholder:text-ink-muted dark:placeholder:text-dark-secondary text-ink dark:text-dark-text
                        outline-none focus:border-sage transition-colors
                        disabled:opacity-60 max-h-32 overflow-y-auto"
             style={{ fieldSizing: 'content' }}
@@ -337,7 +337,7 @@ export default function AIAssistant({ open = false, user, selectedNote = null, n
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="p-2.5 bg-sage text-white rounded-xl hover:bg-sage-light
+            className="p-2.5 bg-sage dark:bg-sage-dark text-white rounded-2xl hover:bg-sage-light dark:hover:bg-sage-darkHover
                        transition-colors disabled:opacity-40 disabled:cursor-not-allowed
                        flex-shrink-0"
             aria-label="Send message"

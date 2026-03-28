@@ -52,12 +52,13 @@ export default function NoteList({
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* New note button */}
-      <div className="p-3">
+      <div className="p-3 pt-0">
         <button
           onClick={onNew}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3
-                     bg-sage text-white text-sm font-medium rounded-lg
-                     hover:bg-sage-light transition-colors shadow-note"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-3
+                     bg-sage dark:bg-sage-dark text-white text-sm font-medium rounded-xl
+                     hover:bg-sage-light dark:hover:bg-sage-darkHover hover:scale-[1.01]
+                     transition-all duration-150 shadow-md"
           aria-label="Create new note"
         >
           <Plus size={16} />
@@ -67,13 +68,13 @@ export default function NoteList({
 
       {/* Filters */}
       <div className="px-3 pb-2">
-        <div className="grid grid-cols-2 p-1 rounded-lg bg-parchment-200 dark:bg-dark-hover border border-parchment-200 dark:border-dark-border">
+        <div className="inline-flex w-full p-1 rounded-xl bg-white/70 dark:bg-dark-elevated/70">
           <button
             onClick={() => setActiveFilter('all')}
             className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors
               ${activeFilter === 'all'
-                ? 'bg-white dark:bg-dark-surface text-ink dark:text-dark-text shadow-note'
-                : 'text-ink-muted dark:text-dark-muted hover:text-ink dark:hover:text-dark-text'
+                ? 'bg-white dark:bg-dark-surface text-ink dark:text-dark-text shadow-sm'
+                : 'text-ink-muted dark:text-dark-secondary hover:text-ink dark:hover:text-dark-text'
               }`}
             aria-pressed={activeFilter === 'all'}
           >
@@ -83,8 +84,8 @@ export default function NoteList({
             onClick={() => setActiveFilter('starred')}
             className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors inline-flex items-center justify-center gap-1.5
               ${activeFilter === 'starred'
-                ? 'bg-white dark:bg-dark-surface text-amber-600 dark:text-amber-400 shadow-note'
-                : 'text-ink-muted dark:text-dark-muted hover:text-amber-600 dark:hover:text-amber-400'
+                ? 'bg-white dark:bg-dark-surface text-amber-600 dark:text-amber-400 shadow-sm'
+                : 'text-ink-muted dark:text-dark-secondary hover:text-amber-600 dark:hover:text-amber-400'
               }`}
             aria-pressed={activeFilter === 'starred'}
           >
@@ -126,7 +127,7 @@ export default function NoteList({
 
       {/* List */}
       <nav
-        className="flex-1 overflow-y-auto px-2 pb-4 space-y-1"
+        className="flex-1 overflow-y-auto px-2 pb-4 space-y-1.5"
         aria-label="Notes list"
       >
         {loading && (
@@ -150,7 +151,7 @@ export default function NoteList({
 
         {!loading && pinnedNotes.length > 0 && (
           <>
-            <div className="px-2 pt-1 pb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-sage dark:text-sage-light">
+            <div className="px-2 pt-1 pb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted dark:text-dark-muted">
               <Pin size={11} />
               Pinned
             </div>
@@ -172,7 +173,7 @@ export default function NoteList({
 
         {!loading && regularNotes.length > 0 && (
           <>
-            <div className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-muted dark:text-dark-muted">
+            <div className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted dark:text-dark-muted">
               Notes
             </div>
             {regularNotes.map(note => (
@@ -193,12 +194,12 @@ export default function NoteList({
       </nav>
 
       {/* Trash button */}
-      <div className="p-3 border-t border-parchment-200 dark:border-dark-border">
+      <div className="p-3 mt-auto">
         <button
           onClick={onOpenTrash}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium rounded-lg
-                     text-ink-muted dark:text-dark-muted border border-parchment-200 dark:border-dark-border
-                     hover:bg-parchment-200 dark:hover:bg-dark-hover transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium rounded-xl
+                     text-ink-muted dark:text-dark-secondary bg-white/70 dark:bg-dark-elevated/70
+                     hover:bg-white dark:hover:bg-dark-surface transition-all duration-150"
           aria-label="Open trash"
         >
           <Trash2 size={15} />
@@ -208,8 +209,8 @@ export default function NoteList({
 
       {trashOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-ink/30 dark:bg-black/50" onClick={onCloseTrash} />
-          <div className="relative z-10 w-full max-w-lg max-h-[80vh] overflow-hidden rounded-xl border border-parchment-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-panel">
+          <div className="absolute inset-0 bg-black/35 backdrop-blur-xl" onClick={onCloseTrash} />
+          <div className="relative z-10 w-full max-w-lg max-h-[80vh] overflow-hidden rounded-2xl border border-parchment-200/70 dark:border-dark-border bg-white/95 dark:bg-dark-surface/95 shadow-lg animate-scale-in">
             <div className="px-4 py-3 border-b border-parchment-200 dark:border-dark-border flex items-center justify-between">
               <h3 className="text-sm font-semibold text-ink dark:text-dark-text">Trash</h3>
               <button
