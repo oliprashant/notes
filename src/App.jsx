@@ -5,7 +5,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, Routes, Route } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
 import { useDarkMode } from './hooks/useDarkMode'
@@ -580,24 +580,27 @@ export default function App() {
       )}
 
       {/* ── Body ─────────────────────────────────────────────── */}
-      {currentView === 'home' ? (
-        <div className="flex flex-1 overflow-hidden relative">
-          <aside className="hidden lg:flex w-72 flex-col bg-parchment-100 dark:bg-dark-surface border-r border-parchment-200 dark:border-dark-border">
-            <div className="p-3 border-b border-parchment-200 dark:border-dark-border">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-muted" />
-                <input
-                  type="search"
-                  placeholder="Search notes..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-dark-bg border border-parchment-200 dark:border-dark-border rounded-lg placeholder:text-ink-muted dark:placeholder:text-dark-muted text-ink dark:text-dark-text outline-none focus:border-sage transition-colors"
-                  aria-label="Search notes"
-                />
-              </div>
-            </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div className="flex flex-1 overflow-hidden relative">
+              <aside className="hidden lg:flex w-72 flex-col bg-parchment-100 dark:bg-dark-surface border-r border-parchment-200 dark:border-dark-border">
+                <div className="p-3 border-b border-parchment-200 dark:border-dark-border">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-muted" />
+                    <input
+                      type="search"
+                      placeholder="Search notes..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-dark-bg border border-parchment-200 dark:border-dark-border rounded-lg placeholder:text-ink-muted dark:placeholder:text-dark-muted text-ink dark:text-dark-text outline-none focus:border-sage transition-colors"
+                      aria-label="Search notes"
+                    />
+                  </div>
+                </div>
 
-            <NoteList
+                <NoteList
               notes={filteredNotes}
               allNotes={notes}
               trashedNotes={trashedNotes}
@@ -633,122 +636,15 @@ export default function App() {
             />
           </main>
         </div>
-      ) : (
-      <div className="flex flex-1 overflow-hidden relative">
+            }
+        />
 
-        {/* ── Sidebar overlay (mobile) ─────────────────────── */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-ink/20 dark:bg-black/40 z-10 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* ── Sidebar ─────────────────────────────────────── */}
-        <aside
-          className={`
-            fixed lg:static inset-y-0 left-0 z-10
-            w-72 flex flex-col bg-parchment-100 dark:bg-dark-surface border-r border-parchment-200 dark:border-dark-border
-            transition-transform duration-200
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            lg:translate-x-0 lg:flex
-            mt-14 lg:mt-0
-          `}
-          aria-label="Notes sidebar"
-        >
-          {/* Search */}
-          <div className="p-3 border-b border-parchment-200 dark:border-dark-border">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-muted" />
-              <input
-                type="search"
-                placeholder="Search notes…"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-dark-bg border border-parchment-200 dark:border-dark-border
-                           rounded-lg placeholder:text-ink-muted dark:placeholder:text-dark-muted text-ink dark:text-dark-text outline-none
-                           focus:border-sage transition-colors"
-                aria-label="Search notes"
-              />
-            </div>
-          </div>
-
-          {/* Note list */}
-          <NoteList
-            notes={filteredNotes}
-            allNotes={notes}
-            trashedNotes={trashedNotes}
-            selectedId={selectedId}
-            selectedTag={selectedTag}
-            loading={notesLoading}
-            onSelect={handleSelectNote}
-            onSelectTag={setSelectedTag}
-            onNew={handleNewNote}
-            onDelete={handleDeleteNote}
-            onRestore={undeleteNote}
-            onPermanentDelete={permanentDelete}
-            onUpdateTags={updateTags}
-            trashOpen={trashOpen}
-            onOpenTrash={() => setTrashOpen(true)}
-            onCloseTrash={() => setTrashOpen(false)}
-            onTogglePin={togglePin}
-            onToggleFavourite={toggleFavourite}
-            unlockedNoteIds={unlockedNoteIds}
-          />
-        </aside>
-
-        {/* ── Editor ──────────────────────────────────────── */}
-        <main className="flex-1 overflow-hidden flex flex-col min-w-0" role="main">
-          {aiLoadError && (
-            <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900 text-red-700 dark:text-red-300 text-sm px-4 py-2 flex items-center justify-between gap-3">
-              <span>AI assistant failed to load. Reload or check network.</span>
-              <button
-                className="px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/70 transition-colors"
-                onClick={() => setAiLoadError(null)}
-                aria-label="Dismiss AI assistant load error"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-          {error && (
-            <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-100 dark:border-red-900 text-red-700 dark:text-red-300 text-sm px-4 py-2">
-              {error}
-            </div>
-          )}
-          {isSelectedLocked && selectedNote ? (
-            <LockScreen
-              mode="unlock"
-              onSuccess={() => handleSessionUnlock(selectedNote?.id)}
-              onCancel={() => {
-                setShowPinEntry(false)
-                setCurrentView('home')
-              }}
-            />
-          ) : (
-            <NoteEditor
-              note={selectedNote}
-              user={user}
-              isGuest={isGuest}
-              onUpdate={editNote}
-              onNew={handleNewNote}
-              onToggleShare={toggleShare}
-              onAddCollaborator={addCollaborator}
-              onRemoveCollaborator={removeCollaborator}
-              onToggleLock={handleToggleLock}
-              onRelockCurrentNote={() => {
-                if (!selectedNote?.id) return
-                setUnlockedNoteIds((prev) => prev.filter((id) => id !== selectedNote.id))
-              }}
-              isUnlocked={Boolean(selectedNote?.id && unlockedNoteIds.includes(selectedNote.id))}
-              masterPinSet={masterPinSet}
-              lastHistorySavedAt={selectedNote ? lastHistorySavedAtByNote[selectedNote.id] ?? null : null}
-            />
-          )}
-        </main>
-
-      </div>
-      )}
+        <Route path="/feed" element={<FeedPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/notifications" element={<NotificationCenter />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/shared/:noteId" element={<SharedNote />} />
+      </Routes>
 
       {/* ── AI Panel (App-level) ───────────────────────────── */}
       {isAiOpen && (
