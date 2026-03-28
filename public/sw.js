@@ -1,4 +1,4 @@
-const CACHE_NAME = 'noteflow-v5'
+const CACHE_NAME = 'noteflow-v6'
 const ASSETS = ['/', '/index.html']
 
 self.addEventListener('install', (event) => {
