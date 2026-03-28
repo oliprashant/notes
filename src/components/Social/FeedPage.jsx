@@ -63,6 +63,7 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
+  const [showComposer, setShowComposer] = useState(true)
   const loadMoreRef = useRef(null)
   const pullStartYRef = useRef(null)
 
@@ -282,6 +283,13 @@ export default function FeedPage() {
           <div className="inline-flex rounded-lg border border-parchment-200 dark:border-dark-border p-1 bg-white dark:bg-dark-surface flex-wrap">
             <button
               type="button"
+              onClick={() => setShowComposer((prev) => !prev)}
+              className="px-3 py-1.5 rounded-md text-sm font-medium bg-sage text-white hover:bg-sage-light"
+            >
+              {showComposer ? 'Hide create' : 'Create post'}
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab(TAB_FOR_YOU)}
               className={`px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 ${activeTab === TAB_FOR_YOU ? 'bg-sage text-white' : 'text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover'}`}
             >
@@ -315,7 +323,7 @@ export default function FeedPage() {
           </div>
         </header>
 
-        <CreatePost onCreate={onCreatePost} disabled={!user?.uid} />
+        {showComposer && <CreatePost onCreate={onCreatePost} disabled={!user?.uid} />}
 
         {import.meta.env.DEV && (
           <UsageMonitorPanel
