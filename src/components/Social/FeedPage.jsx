@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Compass, Flame, Loader2, Sparkles, Users } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { usePosts } from '../../hooks/usePosts'
 import {
-  getBookmarkedNoteIds,
   getForYouFeedPage,
   getFollowingFeedPage,
   getFollowingUserIds,
   getLatestPublicNotesPage,
   getTrendingPublicNotes,
 } from '../../firebase/socialService'
-import NoteCard from './NoteCard'
+import CreatePost from './CreatePost'
+import PostCard from './PostCard'
+import UsageMonitorPanel from './UsageMonitorPanel'
 
 const TAB_FOR_YOU = 'forYou'
 const TAB_FOLLOWING = 'following'
@@ -33,6 +35,13 @@ function FeedSkeleton() {
 
 export default function FeedPage() {
   const { user } = useAuth()
+  const {
+    createPost,
+    queueSize,
+    usageWarning,
+    storageWarning,
+    flushQueue,
+  } = usePosts({ currentUser: user, autoLoad: false })
   const [activeTab, setActiveTab] = useState(TAB_FOR_YOU)
   const [pullDistance, setPullDistance] = useState(0)
 
@@ -50,19 +59,12 @@ export default function FeedPage() {
   const [followingHasMore, setFollowingHasMore] = useState(true)
 
   const [trendingNotes, setTrendingNotes] = useState([])
-  const [bookmarkedIds, setBookmarkedIds] = useState(new Set())
 
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState('')
   const loadMoreRef = useRef(null)
   const pullStartYRef = useRef(null)
-
-  const loadBookmarks = useCallback(async () => {
-    if (!user?.uid) return
-    const ids = await getBookmarkedNoteIds(user.uid)
-    setBookmarkedIds(ids)
-  }, [user?.uid])
 
   const bootstrap = useCallback(async () => {
     setLoading(true)
@@ -77,11 +79,10 @@ export default function FeedPage() {
         setFollowingIds([])
       }
 
-      const [forYouPage, latestPage, trendingPage, bookmarkPromise] = await Promise.all([
+      const [forYouPage, latestPage, trendingPage] = await Promise.all([
         getForYouFeedPage({ userId: user?.uid, followingIds: ids, pageSize: 14 }),
         getLatestPublicNotesPage({ pageSize: 14 }),
         getTrendingPublicNotes(24, 40),
-        loadBookmarks(),
       ])
 
       setForYouNotes(forYouPage.items)
@@ -103,14 +104,12 @@ export default function FeedPage() {
         setFollowingNotes([])
         setFollowingHasMore(false)
       }
-
-      await bookmarkPromise
     } catch (err) {
       setError(err?.message || 'Failed to load feed.')
     } finally {
       setLoading(false)
     }
-  }, [user?.uid, loadBookmarks])
+  }, [user?.uid])
 
   useEffect(() => {
     bootstrap()
@@ -245,13 +244,26 @@ export default function FeedPage() {
           ? latestHasMore
           : false
 
-  const onBookmarkChanged = (noteId, bookmarked) => {
-    setBookmarkedIds((prev) => {
-      const next = new Set(prev)
-      if (bookmarked) next.add(noteId)
-      else next.delete(noteId)
-      return next
-    })
+  const onCreatePost = async (payload) => {
+    if (!user?.uid) throw new Error('Sign in to post.')
+
+    const result = await createPost(payload)
+    if (result.queued) {
+      setError('You are offline. Your post is queued and will retry automatically.')
+      return
+    }
+
+    const created = result.post
+    if (!created || created.visibility !== 'public') return
+
+    setForYouNotes((prev) => [created, ...prev])
+    setLatestNotes((prev) => [created, ...prev])
+
+    if (followingIds.includes(user.uid)) {
+      setFollowingNotes((prev) => [created, ...prev])
+    }
+
+    setTrendingNotes((prev) => [created, ...prev].slice(0, 24))
   }
 
   return (
@@ -303,6 +315,39 @@ export default function FeedPage() {
           </div>
         </header>
 
+        {user?.uid && (
+          <CreatePost onCreate={onCreatePost} />
+        )}
+
+        {import.meta.env.DEV && (
+          <UsageMonitorPanel
+            usageWarning={usageWarning}
+            storageWarning={storageWarning}
+            queueSize={queueSize}
+          />
+        )}
+
+        {queueSize > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            {queueSize} queued post(s) waiting for upload.
+            <button
+              type="button"
+              onClick={() => flushQueue(20)}
+              className="ml-2 underline"
+            >
+              Retry now
+            </button>
+          </div>
+        )}
+
+        {usageWarning?.nearLimit && (
+          <p className="text-xs text-amber-700">{usageWarning.warnings.join(' | ')}</p>
+        )}
+
+        {storageWarning?.nearLimit && (
+          <p className="text-xs text-amber-700">{storageWarning.message}</p>
+        )}
+
         <button
           type="button"
           onClick={bootstrap}
@@ -324,12 +369,10 @@ export default function FeedPage() {
         )}
 
         {!loading && activeNotes.map((note) => (
-          <NoteCard
+          <PostCard
             key={note.id}
             note={note}
             currentUser={user}
-            isBookmarked={bookmarkedIds.has(note.id)}
-            onBookmarkChanged={onBookmarkChanged}
           />
         ))}
 

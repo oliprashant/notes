@@ -31,6 +31,10 @@ const FOLLOWING_COLLECTION = 'following'
 const ACTIVITIES_COLLECTION = 'activities'
 const NOTIFICATIONS_COLLECTION = 'notifications'
 const MAX_BATCH_WRITES = 400
+const MAX_POST_LENGTH = 2000
+const MAX_POST_TAGS = 5
+const MAX_POST_IMAGES = 4
+const POST_PRIVACY = new Set(['public', 'followers', 'private'])
 
 const cache = {
   latestNotes: { at: 0, items: [] },
@@ -406,6 +410,74 @@ export async function toggleLike({ noteId, currentUid, noteOwnerUid, actor }) {
   return liked
 }
 
+export async function createSocialPost({
+  uid,
+  content = '',
+  images = [],
+  tags = [],
+  visibility = 'public',
+  ownerUsername = '',
+  ownerDisplayName = '',
+} = {}) {
+  const trimmedContent = String(content || '').trim()
+  if (!uid) throw new Error('You must be signed in to post.')
+  if (!trimmedContent) throw new Error('Post content cannot be empty.')
+  if (trimmedContent.length > MAX_POST_LENGTH) {
+    throw new Error(`Post must be ${MAX_POST_LENGTH} characters or less.`)
+  }
+
+  const normalizedVisibility = POST_PRIVACY.has(visibility) ? visibility : 'public'
+  const normalizedTags = Array.isArray(tags)
+    ? [...new Set(tags.map((tag) => String(tag || '').trim().toLowerCase()).filter(Boolean))].slice(0, MAX_POST_TAGS)
+    : []
+
+  const normalizedImages = Array.isArray(images)
+    ? images
+      .filter((img) => img?.url)
+      .slice(0, MAX_POST_IMAGES)
+      .map((img) => ({
+        url: String(img.url),
+        path: String(img.path || ''),
+        size: Number(img.size || 0),
+        width: Number(img.width || 0),
+        height: Number(img.height || 0),
+      }))
+    : []
+
+  const ref = doc(collection(db, NOTES_COLLECTION))
+  const batch = writeBatch(db)
+
+  batch.set(ref, {
+    uid,
+    title: '',
+    content: trimmedContent,
+    contentType: 'markdown',
+    visibility: normalizedVisibility,
+    tags: normalizedTags,
+    images: normalizedImages,
+    ownerUsername: ownerUsername || '',
+    ownerDisplayName: ownerDisplayName || '',
+    deleted: false,
+    shared: normalizedVisibility === 'public',
+    likeCount: 0,
+    commentCount: 0,
+    bookmarkCount: 0,
+    repostCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    lastInteractionAt: serverTimestamp(),
+  })
+
+  batch.set(doc(db, USERS_COLLECTION, uid), {
+    postCount: increment(1),
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
+
+  await batch.commit()
+
+  return ref.id
+}
+
 export function subscribeComments(noteId, callback, onError, pageSize = 50) {
   const commentsQuery = query(
     collection(db, NOTES_COLLECTION, noteId, 'comments'),
@@ -430,12 +502,52 @@ export function subscribeComments(noteId, callback, onError, pageSize = 50) {
   )
 }
 
+export async function getCommentsPage({ noteId, pageSize = 20, cursor = null } = {}) {
+  if (!noteId) return { items: [], nextCursor: null, hasMore: false }
+
+  const cappedPageSize = Math.min(50, Math.max(1, pageSize))
+  let commentsQuery = query(
+    collection(db, NOTES_COLLECTION, noteId, 'comments'),
+    orderBy('createdAt', 'desc'),
+    limit(cappedPageSize)
+  )
+
+  if (cursor) {
+    commentsQuery = query(
+      collection(db, NOTES_COLLECTION, noteId, 'comments'),
+      orderBy('createdAt', 'desc'),
+      startAfter(cursor),
+      limit(cappedPageSize)
+    )
+  }
+
+  const snap = await getDocs(commentsQuery)
+  const docs = snap.docs
+
+  const items = docs.map((d) => {
+    const data = d.data()
+    return {
+      id: d.id,
+      ...data,
+      createdAt: normalizeDate(data.createdAt) || new Date(),
+    }
+  })
+
+  return {
+    items,
+    nextCursor: docs.length ? docs[docs.length - 1] : null,
+    hasMore: docs.length === cappedPageSize,
+  }
+}
+
 export async function addComment({ noteId, currentUid, noteOwnerUid, text, parentId = null, actor }) {
   const trimmed = (text || '').trim()
   if (!trimmed) throw new Error('Comment cannot be empty.')
 
+  if (parentId) throw new Error('Only single-level comments are allowed.')
+
   const mentions = extractMentions(trimmed)
-  const mentionUids = await resolveMentionUserIds(mentions)
+  const mentionUids = await resolveMentionUserIds(mentions.slice(0, 5))
 
   const commentRef = await addDoc(collection(db, NOTES_COLLECTION, noteId, 'comments'), {
     uid: currentUid,
@@ -486,6 +598,21 @@ export async function addComment({ noteId, currentUid, noteOwnerUid, text, paren
   )
 
   return commentRef.id
+}
+
+export async function sharePostToUser({ fromUid, targetUid, postId, actorName = '' } = {}) {
+  if (!fromUid || !targetUid || !postId) {
+    throw new Error('Missing required share details.')
+  }
+  if (fromUid === targetUid) return
+
+  await pushNotification(targetUid, {
+    type: 'post_shared',
+    actorUid: fromUid,
+    actorName: actorName || 'Someone',
+    noteId: postId,
+    message: `${actorName || 'Someone'} shared a post with you.`,
+  })
 }
 
 export async function deleteComment({ noteId, commentId, currentUid }) {
