@@ -315,9 +315,7 @@ export default function FeedPage() {
           </div>
         </header>
 
-        {user?.uid && (
-          <CreatePost onCreate={onCreatePost} />
-        )}
+        <CreatePost onCreate={onCreatePost} disabled={!user?.uid} />
 
         {import.meta.env.DEV && (
           <UsageMonitorPanel
