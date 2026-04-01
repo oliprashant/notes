@@ -138,8 +138,10 @@ export function useNotes(user) {
     setError(null)
     try {
       await softDeleteNote(noteId)
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     }
   }, [])
 
@@ -192,8 +194,10 @@ export function useNotes(user) {
       } else {
         await shareNote(noteId)
       }
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     }
   }, [])
 
@@ -243,8 +247,10 @@ export function useNotes(user) {
     setError(null)
     try {
       await toggleNoteLock(noteId, !currentLocked)
+      return true
     } catch (err) {
       setError(err.message)
+      return false
     }
   }, [])
 

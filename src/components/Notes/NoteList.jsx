@@ -4,7 +4,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { Pin, Plus, RotateCcw, Star, Trash2 } from 'lucide-react'
+import { CheckSquare, Copy, Lock, Pin, Plus, RotateCcw, Share2, Square, Star, Trash2, X } from 'lucide-react'
 import NoteItem from './NoteItem'
 
 function formatDeletedDate(date) {
@@ -37,8 +37,15 @@ export default function NoteList({
   onTogglePin,
   onToggleFavourite,
   unlockedNoteIds = [],
+  onBulkShare,
+  onBulkDelete,
+  onBulkDuplicate,
+  onBulkToggleLock,
 }) {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [multiSelectMode, setMultiSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState([])
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null)
 
   const uniqueTags = [...new Set((allNotes ?? []).flatMap(note => note.tags ?? []))]
 
@@ -48,22 +55,94 @@ export default function NoteList({
 
   const pinnedNotes = visibleNotes.filter(note => note.pinned)
   const regularNotes = visibleNotes.filter(note => !note.pinned)
+  const orderedVisibleIds = [...pinnedNotes, ...regularNotes].map((note) => note.id)
+
+  const exitMultiSelect = () => {
+    setMultiSelectMode(false)
+    setSelectedIds([])
+    setLastSelectedIndex(null)
+  }
+
+  const toggleMode = () => {
+    if (multiSelectMode) {
+      exitMultiSelect()
+      return
+    }
+    setMultiSelectMode(true)
+  }
+
+  const handleSelectOne = (noteId, index, event) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (event?.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, index)
+        const end = Math.max(lastSelectedIndex, index)
+        const rangeIds = orderedVisibleIds.slice(start, end + 1)
+        const shouldSelectRange = !next.has(noteId)
+        rangeIds.forEach((id) => {
+          if (shouldSelectRange) {
+            next.add(id)
+          } else {
+            next.delete(id)
+          }
+        })
+      } else if (next.has(noteId)) {
+        next.delete(noteId)
+      } else {
+        next.add(noteId)
+      }
+      return Array.from(next)
+    })
+    setLastSelectedIndex(index)
+  }
+
+  const allVisibleSelected = orderedVisibleIds.length > 0 && orderedVisibleIds.every((id) => selectedIds.includes(id))
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([])
+      return
+    }
+    setSelectedIds(orderedVisibleIds)
+  }
+
+  const runBulkAction = async (action) => {
+    if (selectedIds.length === 0) return
+    await action?.(selectedIds)
+    exitMultiSelect()
+  }
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* New note button */}
       <div className="p-3 pt-0">
-        <button
-          onClick={onNew}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-3
-                     bg-sage dark:bg-sage-dark text-white text-sm font-medium rounded-xl
-                     hover:bg-sage-light dark:hover:bg-sage-darkHover hover:scale-[1.01]
-                     transition-all duration-150 shadow-md"
-          aria-label="Create new note"
-        >
-          <Plus size={16} />
-          New note
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={onNew}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3
+                      bg-sage dark:bg-sage-dark text-white text-sm font-medium rounded-xl
+                      hover:bg-sage-light dark:hover:bg-sage-darkHover hover:scale-[1.01]
+                      transition-all duration-150 shadow-md"
+            aria-label="Create new note"
+          >
+            <Plus size={16} />
+            New note
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMode}
+            className={`w-full flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+              multiSelectMode
+                ? 'bg-parchment-200 dark:bg-dark-hover text-ink dark:text-dark-text'
+                : 'bg-white/80 dark:bg-dark-elevated/80 text-ink dark:text-dark-text hover:bg-white dark:hover:bg-dark-surface'
+            }`}
+            aria-label={multiSelectMode ? 'Exit select mode' : 'Enter select mode'}
+          >
+            {multiSelectMode ? <X size={15} /> : <CheckSquare size={15} />}
+            {multiSelectMode ? 'Done' : 'Select'}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -160,12 +239,18 @@ export default function NoteList({
                 key={note.id}
                 note={note}
                 isSelected={note.id === selectedId}
-                onSelect={() => onSelect(note.id)}
+                onSelect={() => {
+                  if (multiSelectMode) return
+                  onSelect(note.id)
+                }}
                 onDelete={() => onDelete(note.id)}
                 onSelectTag={onSelectTag}
                 onTogglePin={onTogglePin}
                 onToggleFavourite={onToggleFavourite}
                 unlockedNoteIds={unlockedNoteIds}
+                multiSelectMode={multiSelectMode}
+                isBulkSelected={selectedIds.includes(note.id)}
+                onToggleBulkSelect={(event) => handleSelectOne(note.id, orderedVisibleIds.indexOf(note.id), event)}
               />
             ))}
           </>
@@ -181,20 +266,85 @@ export default function NoteList({
                 key={note.id}
                 note={note}
                 isSelected={note.id === selectedId}
-                onSelect={() => onSelect(note.id)}
+                onSelect={() => {
+                  if (multiSelectMode) return
+                  onSelect(note.id)
+                }}
                 onDelete={() => onDelete(note.id)}
                 onSelectTag={onSelectTag}
                 onTogglePin={onTogglePin}
                 onToggleFavourite={onToggleFavourite}
                 unlockedNoteIds={unlockedNoteIds}
+                multiSelectMode={multiSelectMode}
+                isBulkSelected={selectedIds.includes(note.id)}
+                onToggleBulkSelect={(event) => handleSelectOne(note.id, orderedVisibleIds.indexOf(note.id), event)}
               />
             ))}
           </>
         )}
       </nav>
 
+      {multiSelectMode && (
+        <div className="sticky bottom-0 z-20 px-3 pb-3 animate-fade-up">
+          <div className="rounded-2xl border border-parchment-200 dark:border-dark-border bg-white/95 dark:bg-dark-surface/95 backdrop-blur-xl p-3 shadow-panel space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-ink-muted dark:text-dark-muted">
+                {selectedIds.length} selected
+              </p>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md hover:bg-parchment-100 dark:hover:bg-dark-hover text-ink dark:text-dark-text transition-colors"
+              >
+                {allVisibleSelected ? <Square size={12} /> : <CheckSquare size={12} />}
+                {allVisibleSelected ? 'Clear all' : 'Select all'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => runBulkAction(onBulkShare)}
+                className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border border-parchment-200 dark:border-dark-border text-xs text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Share2 size={12} />
+                Share
+              </button>
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => runBulkAction(onBulkDuplicate)}
+                className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border border-parchment-200 dark:border-dark-border text-xs text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Copy size={12} />
+                Duplicate
+              </button>
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => runBulkAction(onBulkToggleLock)}
+                className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border border-parchment-200 dark:border-dark-border text-xs text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Lock size={12} />
+                Lock/Unlock
+              </button>
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => runBulkAction(onBulkDelete)}
+                className="inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border border-red-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Trash2 size={12} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Trash button */}
-      <div className="p-3 mt-auto">
+      <div className={`p-3 mt-auto transition-all duration-200 ${multiSelectMode ? 'pb-1' : ''}`}>
         <button
           onClick={onOpenTrash}
           className="w-full flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium rounded-xl

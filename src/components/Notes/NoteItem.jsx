@@ -5,7 +5,7 @@
 // ──────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { Lock, Pin, Star, Trash2 } from 'lucide-react'
+import { Check, Lock, Pin, Star, Trash2 } from 'lucide-react'
 
 /** Format a date as a human-readable relative string */
 function formatDate(date) {
@@ -27,7 +27,19 @@ function stripHtml(text = '') {
   return text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-export default function NoteItem({ note, isSelected, onSelect, onDelete, onTogglePin, onToggleFavourite, onSelectTag, unlockedNoteIds = [] }) {
+export default function NoteItem({
+  note,
+  isSelected,
+  onSelect,
+  onDelete,
+  onTogglePin,
+  onToggleFavourite,
+  onSelectTag,
+  unlockedNoteIds = [],
+  multiSelectMode = false,
+  isBulkSelected = false,
+  onToggleBulkSelect,
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const handleDeleteClick = (e) => {
@@ -52,15 +64,31 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
     <article
       role="button"
       tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onSelect()}
+      onClick={(event) => {
+        if (multiSelectMode) {
+          onToggleBulkSelect?.(event)
+          return
+        }
+        onSelect()
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        if (multiSelectMode) {
+          onToggleBulkSelect?.(event)
+          return
+        }
+        onSelect()
+      }}
       aria-selected={isSelected}
       aria-label={isLocked ? 'Note: Locked Note' : `Note: ${note.title}`}
       style={(!isLocked && note.color) ? { borderLeft: `3px solid ${note.color}` } : undefined}
       className={`
         group relative flex flex-col gap-0.5 p-3 rounded-xl cursor-pointer
         transition-all duration-150 outline-none
-        ${isSelected
+        ${multiSelectMode && isBulkSelected
+          ? 'ring-2 ring-sage/50 bg-sage-pale/40 dark:bg-sage/10'
+          : isSelected
           ? 'bg-white dark:bg-dark-elevated shadow-md'
           : 'hover:bg-white/70 dark:hover:bg-dark-elevated/70 hover:-translate-y-[1px]'
         }
@@ -69,11 +97,23 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
       <div className="flex items-start justify-between gap-2">
         <h3 className={`text-[14px] font-medium truncate leading-snug inline-flex items-center gap-1.5
           ${isSelected ? 'text-ink dark:text-dark-text' : 'text-ink-light dark:text-dark-secondary'}`}>
+          {multiSelectMode && (
+            <span
+              className={`w-4 h-4 rounded border inline-flex items-center justify-center transition-all duration-200 ${
+                isBulkSelected
+                  ? 'bg-sage border-sage text-white scale-100'
+                  : 'border-parchment-300 dark:border-dark-border text-transparent scale-95'
+              }`}
+              aria-hidden="true"
+            >
+              <Check size={11} />
+            </span>
+          )}
           {!isLocked && note.locked && <Lock size={12} className="flex-shrink-0 text-ink-muted dark:text-dark-muted" aria-hidden="true" />}
           <span className="truncate">{isLocked ? '🔒 Locked Note' : (note.title || 'Untitled')}</span>
         </h3>
 
-        <div className="flex items-center gap-0.5">
+        {!multiSelectMode && <div className="flex items-center gap-0.5">
           {/* Favourite button */}
           <button
             onClick={(e) => {
@@ -122,7 +162,7 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
           >
             <Trash2 size={13} />
           </button>
-        </div>
+        </div>}
       </div>
 
       {!isLocked && note?.summary ? (
@@ -137,7 +177,7 @@ export default function NoteItem({ note, isSelected, onSelect, onDelete, onToggl
         )
       )}
 
-      {!isLocked && tags.length > 0 && (
+      {!multiSelectMode && !isLocked && tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">
           {tags.map((tag) => (
             <button

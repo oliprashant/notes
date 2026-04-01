@@ -4,7 +4,7 @@
 // main app, and layout composition. Now with modern design system!
 // ──────────────────────────────────────────────────────────────
 
-import { useState, useEffect, lazy, Suspense, useMemo, useRef } from 'react'
+import { useState, useEffect, lazy, Suspense, useMemo, useRef, useCallback } from 'react'
 import { Link, useLocation, useNavigate, Routes, Route } from 'react-router-dom'
 import { useAuth }    from './hooks/useAuth'
 import { useNotes }   from './hooks/useNotes'
@@ -94,6 +94,7 @@ export default function App() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [noteHistory, setNoteHistory] = useState([])
   const [selectedHistoryId, setSelectedHistoryId] = useState(null)
+  const [toasts, setToasts] = useState([])
   // Mobile sidebar open
   const [sidebarOpen, setSidebarOpen] = useState(false)
   // Search query for filtering notes
@@ -167,6 +168,14 @@ export default function App() {
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [showUserMenu])
+
+  const pushToast = useCallback((type, message) => {
+    const id = crypto.randomUUID()
+    setToasts((prev) => [...prev, { id, type, message }])
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id))
+    }, 3200)
+  }, [])
 
   const pathname = location.pathname
   const isAiRoute = pathname === '/ai'
@@ -281,6 +290,124 @@ export default function App() {
     setUnlockedNoteIds((prev) => prev.filter((noteId) => noteId !== id))
   }
 
+  const handleBulkShare = async (noteIds) => {
+    const selectedNotes = notes.filter((note) => noteIds.includes(note.id))
+    if (selectedNotes.length === 0) return
+
+    const shareTargets = selectedNotes.filter((note) => !note.shared)
+    const outcomes = await Promise.all(shareTargets.map((note) => toggleShare(note.id, false)))
+    const successCount = outcomes.filter(Boolean).length
+    const failedCount = outcomes.length - successCount
+
+    const links = selectedNotes.map((note) => `${window.location.origin}/shared/${note.id}`)
+    try {
+      await navigator.clipboard.writeText(links.join('\n'))
+    } catch {
+      // Clipboard access can fail in restricted contexts; sharing still succeeds.
+    }
+
+    if (failedCount === 0) {
+      pushToast('success', `${successCount || selectedNotes.length} note(s) shared. Links copied.`)
+      return
+    }
+    if (successCount > 0) {
+      pushToast('error', `${successCount} shared, ${failedCount} failed.`)
+      return
+    }
+    pushToast('error', 'Failed to share selected notes.')
+  }
+
+  const handleBulkDelete = async (noteIds) => {
+    if (!window.confirm(`Delete ${noteIds.length} selected note(s)?`)) return
+
+    const outcomes = await Promise.all(noteIds.map((id) => removeNote(id)))
+    const successIds = noteIds.filter((_, index) => outcomes[index])
+    const failedCount = noteIds.length - successIds.length
+
+    if (successIds.includes(selectedId)) {
+      const remaining = notes.filter((note) => !successIds.includes(note.id))
+      setSelectedId(remaining[0]?.id ?? null)
+      if (remaining.length === 0) {
+        setCurrentView('home')
+      }
+    }
+
+    setUnlockedNoteIds((prev) => prev.filter((id) => !successIds.includes(id)))
+
+    if (failedCount === 0) {
+      pushToast('success', `${successIds.length} note(s) moved to trash.`)
+      return
+    }
+    if (successIds.length > 0) {
+      pushToast('error', `${successIds.length} deleted, ${failedCount} failed.`)
+      return
+    }
+    pushToast('error', 'Failed to delete selected notes.')
+  }
+
+  const handleBulkDuplicate = async (noteIds) => {
+    const selectedNotes = notes.filter((note) => noteIds.includes(note.id))
+    if (selectedNotes.length === 0) return
+
+    const results = await Promise.all(
+      selectedNotes.map((note) =>
+        addNote({
+          title: `${note.title || 'Untitled'} (Copy)`,
+          content: note.content || '',
+          tags: Array.isArray(note.tags) ? [...note.tags] : [],
+          color: note.color ?? null,
+          summary: note.summary ?? '',
+        })
+      )
+    )
+
+    const successCount = results.filter(Boolean).length
+    const failedCount = selectedNotes.length - successCount
+
+    if (failedCount === 0) {
+      pushToast('success', `${successCount} duplicate note(s) created.`)
+      return
+    }
+    if (successCount > 0) {
+      pushToast('error', `${successCount} duplicated, ${failedCount} failed.`)
+      return
+    }
+    pushToast('error', 'Failed to duplicate selected notes.')
+  }
+
+  const handleBulkToggleLock = async (noteIds) => {
+    const selectedNotes = notes.filter((note) => noteIds.includes(note.id))
+    if (selectedNotes.length === 0) return
+
+    const needsPinSetup = selectedNotes.some((note) => !note.locked)
+    if (needsPinSetup && !masterPinSet) {
+      setShowPinSetup(true)
+      pushToast('error', 'Set a master PIN before locking notes.')
+      return
+    }
+
+    const results = await Promise.all(
+      selectedNotes.map((note) => toggleLock(note.id, Boolean(note.locked)))
+    )
+
+    const successIds = selectedNotes
+      .filter((_, index) => results[index])
+      .map((note) => note.id)
+
+    const failedCount = selectedNotes.length - successIds.length
+    setUnlockedNoteIds((prev) => prev.filter((id) => !successIds.includes(id)))
+
+    if (failedCount === 0) {
+      pushToast('success', `${successIds.length} note(s) updated lock state.`)
+      return
+    }
+    if (successIds.length > 0) {
+      pushToast('error', `${successIds.length} updated, ${failedCount} failed.`)
+      return
+    }
+    pushToast('error', 'Failed to update lock state for selected notes.')
+  }
+
   const handleToggleLock = async (noteId, currentLocked) => {
     if (!currentLocked && !masterPinSet) {
       setPendingLockNoteId(noteId)
@@ -388,6 +515,16 @@ export default function App() {
 
         <div className="flex items-center gap-1.5">
           <button
+            onClick={() => navigate('/feed')}
+            className="inline-flex items-center gap-2 h-8 px-3 rounded-xl border border-parchment-200 dark:border-dark-border bg-white/70 dark:bg-dark-elevated/70 text-sm text-ink dark:text-dark-text hover:bg-white dark:hover:bg-dark-surface transition-all duration-150"
+            title="Feed"
+            aria-label="Open feed"
+          >
+            <Compass size={15} />
+            <span className="hidden sm:inline">Feed</span>
+          </button>
+
+          <button
             onClick={() => navigate('/search')}
             className="w-8 h-8 rounded-xl text-ink-muted dark:text-dark-secondary hover:bg-parchment-100 dark:hover:bg-dark-elevated hover:text-ink dark:hover:text-dark-text transition-all duration-150"
             title="Search"
@@ -444,9 +581,7 @@ export default function App() {
 
                 <div className="h-px bg-parchment-200 dark:bg-dark-border my-1" />
 
-                <button onClick={() => { navigate('/feed'); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Feed</button>
                 <button onClick={() => { navigate('/profile'); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Profile</button>
-                <button onClick={() => { handleOpenAiPanel(); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">AI assistant</button>
                 <button onClick={() => { setIsSettingsOpen(true); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Settings</button>
                 <button onClick={() => { setImportOpen(true); setShowUserMenu(false) }} className="w-full text-left px-3 py-2 text-sm rounded-xl text-ink dark:text-dark-text hover:bg-parchment-100 dark:hover:bg-dark-elevated">Import files</button>
                 {!isGuest && (
@@ -493,13 +628,29 @@ export default function App() {
         />
       )}
 
+      <button
+        type="button"
+        onClick={handleOpenAiPanel}
+        className="fixed bottom-5 right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-sage dark:bg-sage-dark text-white shadow-lg shadow-sage/30 hover:bg-sage-light dark:hover:bg-sage-darkHover hover:scale-[1.03] active:scale-[0.98] transition-all duration-200"
+        aria-label="Open AI assistant"
+        title={canUseAI ? 'Open AI assistant' : aiDisabledReason}
+      >
+        <BotMessageSquare size={22} />
+      </button>
+
       {/* ── Body ─────────────────────────────────────────────── */}
       <Routes>
         <Route
           path="/"
           element={
             <div className="flex flex-1 overflow-hidden relative animate-fade-up">
-              <aside className="hidden lg:flex w-[260px] flex-col bg-parchment-100/80 dark:bg-dark-surface/80 backdrop-blur-sm">
+              <aside
+                className={`
+                  ${sidebarOpen ? 'flex' : 'hidden'}
+                  lg:flex w-[260px] flex-col bg-parchment-100/95 dark:bg-dark-surface/95 backdrop-blur-sm
+                  fixed lg:static inset-y-[52px] left-0 z-30 lg:z-auto border-r border-parchment-200/80 dark:border-dark-border/80
+                `}
+              >
                 <div className="p-3">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-muted" />
@@ -534,6 +685,10 @@ export default function App() {
               onTogglePin={togglePin}
               onToggleFavourite={toggleFavourite}
               unlockedNoteIds={unlockedNoteIds}
+              onBulkShare={handleBulkShare}
+              onBulkDelete={handleBulkDelete}
+              onBulkDuplicate={handleBulkDuplicate}
+              onBulkToggleLock={handleBulkToggleLock}
             />
 
             <div className="mx-3 mb-3 mt-auto rounded-xl bg-white/70 dark:bg-dark-elevated/80 px-3 py-2.5 flex items-center gap-2">
@@ -550,6 +705,15 @@ export default function App() {
               </div>
             </div>
           </aside>
+
+          {sidebarOpen && (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 top-[52px] z-20 bg-black/30 lg:hidden"
+              aria-label="Close notes sidebar"
+            />
+          )}
 
           <main className="flex-1 overflow-hidden bg-parchment-50 dark:bg-dark-bg" role="main">
             {currentView === 'home' ? (
@@ -744,6 +908,23 @@ export default function App() {
       )}
 
       <SettingsModal open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      {toasts.length > 0 && (
+        <div className="fixed right-3 top-16 z-[70] space-y-2">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`min-w-[220px] max-w-[340px] rounded-lg border px-3 py-2 text-sm shadow-panel animate-scale-in ${
+                toast.type === 'success'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}
+            >
+              {toast.message}
+            </div>
+          ))}
+        </div>
+      )}
 
       <CookieBanner />
     </div>
