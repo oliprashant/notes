@@ -552,16 +552,56 @@ export default function App() {
           </aside>
 
           <main className="flex-1 overflow-hidden bg-parchment-50 dark:bg-dark-bg" role="main">
-            <HomePage
-              notes={notes}
-              user={user}
-              onSelectNote={handleSelectNote}
-              onNewNote={handleNewNote}
-              onBrowseAll={handleBrowseAllNotes}
-              onTogglePin={togglePin}
-              onToggleFavourite={toggleFavourite}
-              unlockedNoteIds={unlockedNoteIds}
-            />
+            {currentView === 'home' ? (
+              <HomePage
+                notes={notes}
+                user={user}
+                onSelectNote={handleSelectNote}
+                onNewNote={handleNewNote}
+                onBrowseAll={handleBrowseAllNotes}
+                onTogglePin={togglePin}
+                onToggleFavourite={toggleFavourite}
+                unlockedNoteIds={unlockedNoteIds}
+              />
+            ) : !selectedNote ? (
+              <div className="h-full flex items-center justify-center px-6">
+                <div className="text-center">
+                  <p className="text-sm text-ink-muted dark:text-dark-muted">Select a note to start editing.</p>
+                  <button
+                    type="button"
+                    onClick={handleNewNote}
+                    className="mt-3 px-3 py-2 text-sm rounded-md bg-sage text-white hover:bg-sage-light transition-colors"
+                  >
+                    Create note
+                  </button>
+                </div>
+              </div>
+            ) : isSelectedLocked ? (
+              <LockScreen
+                mode="unlock"
+                onSuccess={() => handleSessionUnlock(selectedNote.id)}
+                onCancel={() => setCurrentView('home')}
+              />
+            ) : (
+              <NoteEditor
+                note={selectedNote}
+                user={user}
+                isGuest={isGuest}
+                onUpdate={(updates) => editNote(selectedNote.id, updates)}
+                onNew={handleNewNote}
+                onToggleShare={toggleShare}
+                onAddCollaborator={addCollaborator}
+                onRemoveCollaborator={removeCollaborator}
+                onToggleLock={handleToggleLock}
+                onRelockCurrentNote={() => {
+                  setUnlockedNoteIds((prev) => prev.filter((id) => id !== selectedNote.id))
+                  setShowPinEntry(true)
+                }}
+                isUnlocked={unlockedNoteIds.includes(selectedNote.id)}
+                masterPinSet={masterPinSet}
+                lastHistorySavedAt={lastHistorySavedAtByNote[selectedNote.id] ?? null}
+              />
+            )}
           </main>
         </div>
             }
